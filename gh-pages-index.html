@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Whiteboard to Prototype</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    #particles-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .container {
+      background: white;
+      border: 1px solid rgba(79, 172, 254, 0.15);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(79, 172, 254, 0.1);
+      max-width: 1000px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 15px;
+      color: #030203;
+      text-align: center;
+      letter-spacing: -1px;
+    }
+
+    .highlight {
+      background: linear-gradient(135deg, #4facfe 0%, #5eb3d6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 50px;
+      font-size: 18px;
+      line-height: 1.65;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .demos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .demo-card {
+      background: rgba(79, 172, 254, 0.02);
+      border: 2px solid rgba(79, 172, 254, 0.15);
+      border-radius: 20px;
+      padding: 0;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .demo-card:hover {
+      border-color: #4facfe;
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(79, 172, 254, 0.2);
+    }
+
+    .whiteboard-image {
+      width: 100%;
+      height: 280px;
+      object-fit: cover;
+      border-bottom: 2px solid rgba(79, 172, 254, 0.15);
+    }
+
+    .demo-content {
+      padding: 30px;
+      text-align: center;
+    }
+
+    .demo-card h2 {
+      color: #030203;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .demo-card p {
+      color: #666;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .demo-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+
+    .tag {
+      background: rgba(79, 172, 254, 0.1);
+      color: #4facfe;
+      padding: 6px 14px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .build-button {
+      display: inline-block;
+      width: 100%;
+      padding: 18px 30px;
+      background: #030203;
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+      border-radius: 50px;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .build-button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(79, 172, 254, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .build-button:hover::before {
+      width: 400px;
+      height: 400px;
+    }
+
+    .build-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(3, 2, 3, 0.3);
+    }
+
+    .build-button span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(79, 172, 254, 0.15);
+    }
+
+    .footer-link a {
+      color: #030203;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 15px 30px;
+      border: 2px solid #030203;
+      border-radius: 50px;
+      display: inline-block;
+      transition: all 0.3s;
+    }
+
+    .footer-link a:hover {
+      background: #030203;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(3, 2, 3, 0.2);
+    }
+
+    .author-footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 30px 20px;
+      border-top: 1px solid rgba(79, 172, 254, 0.15);
+    }
+
+    .author-footer h3 {
+      color: #030203;
+      font-size: 18px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .author-footer p {
+      color: #666;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .author-footer a {
+      color: #4facfe;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.3s;
+    }
+
+    .author-footer a:hover {
+      color: #5eb3d6;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .demos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .whiteboard-image {
+        height: 220px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+  <div class="container">
+    <h1>Whiteboard <span class="highlight">to Prototype</span></h1>
+    <p class="subtitle">See live examples generated from<br>hand-drawn whiteboard sketches using Claude AI</p>
+
+    <div class="demos-grid">
+      <!-- Algebra Learning Demo -->
+      <div class="demo-card">
+        <img src="https://raw.githubusercontent.com/sarahfor/whiteboard-to-prototype/main/assets/algebra-whiteboard.jpg" alt="Algebra Learning Whiteboard" class="whiteboard-image">
+        <div class="demo-content">
+          <h2>Algebra Learning</h2>
+          <p>Educational platform for learning algebra concepts with interactive examples and practice problems.</p>
+          <div class="demo-tags">
+            <span class="tag">Education</span>
+            <span class="tag">Math</span>
+            <span class="tag">Interactive</span>
+          </div>
+          <a href="https://sarahfor.github.io/algebra-learning-demo/" target="_blank" class="build-button">
+            <span>Tap to Build This Prototype →</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Animal Facts Demo -->
+      <div class="demo-card">
+        <img src="https://raw.githubusercontent.com/sarahfor/whiteboard-to-prototype/main/assets/animal-facts-whiteboard.jpg" alt="Animal Facts Whiteboard" class="whiteboard-image">
+        <div class="demo-content">
+          <h2>Animal Facts</h2>
+          <p>Fun and engaging website showcasing interesting facts about various animals with a clean card-based layout.</p>
+          <div class="demo-tags">
+            <span class="tag">Educational</span>
+            <span class="tag">Wildlife</span>
+            <span class="tag">Kids</span>
+          </div>
+          <a href="https://sarahfor.github.io/animal-facts-demo/" target="_blank" class="build-button">
+            <span>Tap to Build This Prototype →</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-link">
+      <a href="https://github.com/sarahfor/whiteboard-to-prototype" target="_blank">Download on GitHub</a>
+    </div>
+
+    <div class="author-footer">
+      <h3>Built by Sarah Forrest</h3>
+      <p>CS Grad Student, AI Research Fellow, Your Human in the Loop</p>
+      <p>Instagram: <a href="https://www.instagram.com/sarforre/" target="_blank">@sarforre</a></p>
+    </div>
+  </div>
+
+  <script>
+    // Particle animation
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = [];
+    const particleCount = 60;
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.size = Math.random() * 2 + 1;
+      }
+
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+      }
+
+      draw() {
+        ctx.fillStyle = 'rgba(79, 172, 254, 0.4)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function init() {
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+
+        // Draw connection lines
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 120) {
+            ctx.strokeStyle = `rgba(79, 172, 254, ${0.15 - distance / 1200})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    init();
+    animate();
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>

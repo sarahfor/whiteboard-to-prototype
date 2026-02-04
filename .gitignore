@@ -1,22 +1,8 @@
-# Dependencies
 node_modules/
-package-lock.json
-
-# Environment variables
 .env
-
-# Uploads and outputs
-uploads/
-__output__/
-history/
-
-# OS files
+uploads/*
+!uploads/.gitkeep
+__output__/*
+!__output__/.gitkeep
 .DS_Store
-
-# Temporary files
-*.tmp
-.cache/
-
-# Backup files
-*.old-backup
-gh-pages-index.html
+*.log
