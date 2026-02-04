@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whiteboard to Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #030203;
+            text-align: center;
+            font-weight: 900;
+        }
+
+        h1 .blue {
+            color: #4facfe;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 30px;
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid rgba(79, 172, 254, 0.15);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.1);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #030203;
+        }
+
+        .helper-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        .helper-text a {
+            color: #4facfe;
+            text-decoration: none;
+        }
+
+        .upload-area {
+            border: 3px dashed rgba(79, 172, 254, 0.3);
+            border-radius: 15px;
+            padding: 60px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+            background: rgba(79, 172, 254, 0.02);
+        }
+
+        .upload-area:hover {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #4facfe;
+            background: rgba(79, 172, 254, 0.08);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0;
+            display: none;
+        }
+
+        .upload-text {
+            color: #4facfe;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-container {
+            display: none;
+        }
+
+        .preview-container.active {
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .preview-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.15);
+        }
+
+        .file-info {
+            background: rgba(79, 172, 254, 0.05);
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+            text-align: center;
+            border: 1px solid rgba(79, 172, 254, 0.15);
+        }
+
+        textarea {
+            width: 100%;
+            padding: 18px;
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            border-radius: 15px;
+            font-family: inherit;
+            font-size: 15px;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.3s;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            background: #ffffff;
+            color: #030203;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        textarea::placeholder {
+            color: #999;
+        }
+
+        .button {
+            width: 100%;
+            padding: 20px;
+            background: #030203;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(79, 172, 254, 0.3);
+        }
+
+        .button:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .button:disabled::before {
+            display: none;
+        }
+
+        .button.secondary {
+            background: #f5f5f5;
+            color: #030203;
+            box-shadow: none;
+            margin-top: 12px;
+        }
+
+        .button.secondary:hover:not(:disabled) {
+            background: #e8e8e8;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-container {
+            display: none;
+            margin-top: 25px;
+            padding: 25px;
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+
+        .status-container.active {
+            display: block;
+        }
+
+        .status-message {
+            font-size: 15px;
+            color: #030203;
+            margin-bottom: 15px;
+        }
+
+        .status-message strong {
+            color: #4facfe;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(79, 172, 254, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #7dd3fc 100%);
+            width: 30%;
+            animation: indeterminate 1.5s ease-in-out infinite;
+        }
+
+        @keyframes indeterminate {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+
+        .cost-info {
+            font-size: 13px;
+            color: #666;
+            text-align: right;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 25px;
+            padding: 25px;
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(79, 172, 254, 0.3);
+        }
+
+        .result-container.active {
+            display: block;
+        }
+
+        .result-container.error {
+            background: rgba(255, 79, 79, 0.1);
+            border-color: rgba(255, 79, 79, 0.3);
+        }
+
+        .result-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #030203;
+        }
+
+        .result-message {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+
+    <div class="container">
+        <h1>Whiteboard <span class="blue">to Prototype</span></h1>
+        <p class="subtitle">Transform your whiteboard sketches into working prototypes</p>
+
+        <div class="section">
+            <div class="section-title">Upload Whiteboard Photo</div>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">Upload Whiteboard Photo</div>
+                <div class="upload-hint">or drag and drop here</div>
+            </div>
+
+            <input type="file" id="fileInput" accept="image/*" capture="environment">
+
+            <div class="preview-container" id="previewContainer">
+                <img id="previewImage" class="preview-image" alt="Preview">
+                <div class="file-info" id="fileInfo"></div>
+            </div>
+
+            <textarea id="promptInput" placeholder="Optional: Add specific instructions (e.g., 'Make it dark mode', 'Add animations')"></textarea>
+
+            <button class="button" id="buildButton" disabled>Build Prototype</button>
+            <button class="button secondary" id="cancelButton">Cancel</button>
+        </div>
+
+        <div class="status-container" id="statusContainer">
+            <div class="status-message" id="statusMessage">
+                <strong>Processing...</strong> Claude is analyzing your whiteboard and building the prototype
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="result-title" id="resultTitle">Success!</div>
+            <div class="result-message" id="resultMessage"></div>
+            <a href="#" id="openDemoButton" class="button" style="margin-top: 20px; text-decoration: none; display: none;" target="_blank">Open in New Tab</a>
+        </div>
+    </div>
+
+    <script>
+        // Particle background
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        for (let i = 0; i < 50; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                radius: Math.random() * 2 + 1
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(79, 172, 254, 0.3)';
+                ctx.fill();
+            });
+
+            particles.forEach((p1, i) => {
+                particles.slice(i + 1).forEach(p2 => {
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(79, 172, 254, ${0.2 * (1 - dist / 120)})`;
+                        ctx.stroke();
+                    }
+                });
+            });
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Main app logic
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewImage = document.getElementById('previewImage');
+        const fileInfo = document.getElementById('fileInfo');
+        const promptInput = document.getElementById('promptInput');
+        const buildButton = document.getElementById('buildButton');
+        const cancelButton = document.getElementById('cancelButton');
+        const statusContainer = document.getElementById('statusContainer');
+        const statusMessage = document.getElementById('statusMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultMessage = document.getElementById('resultMessage');
+        const openDemoButton = document.getElementById('openDemoButton');
+
+        let selectedFile = null;
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            selectedFile = file;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewContainer.classList.add('active');
+                uploadArea.style.display = 'none'; // Hide upload area
+                buildButton.disabled = false; // Enable build button
+            };
+            reader.readAsDataURL(file);
+
+            const sizeKB = (file.size / 1024).toFixed(2);
+            fileInfo.textContent = `${file.name} (${sizeKB} KB)`;
+        }
+
+        cancelButton.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            previewImage.src = '';
+            previewContainer.classList.remove('active');
+            uploadArea.style.display = 'block'; // Show upload area again
+            buildButton.disabled = true; // Disable build button
+            promptInput.value = '';
+            resultContainer.classList.remove('active');
+            openDemoButton.style.display = 'none'; // Hide demo button
+            statusContainer.classList.remove('active');
+        });
+
+        buildButton.addEventListener('click', async () => {
+            if (!selectedFile) {
+                alert('Please upload a whiteboard photo first');
+                return;
+            }
+
+            buildButton.disabled = true;
+            buildButton.innerHTML = '<span class="loading-spinner"></span>Building...';
+            statusContainer.classList.add('active');
+            resultContainer.classList.remove('active');
+            openDemoButton.style.display = 'none'; // Hide demo button during build
+
+            const formData = new FormData();
+            formData.append('whiteboard', selectedFile);
+            formData.append('prompt', promptInput.value.trim());
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    resultContainer.classList.add('active');
+                    resultContainer.classList.remove('error');
+                    resultTitle.textContent = '✅ Prototype Generated Successfully!';
+                    resultMessage.textContent = `Your prototype has been created and saved to ${result.outputDir.split('/').pop()}/. Generated using ${result.tokens.input} input tokens and ${result.tokens.output} output tokens. Total cost: $${result.cost.toFixed(4)}`;
+
+                    // Show and configure the open button
+                    openDemoButton.href = result.demoUrl;
+                    openDemoButton.style.display = 'block';
+
+                    // Try to automatically open (may be blocked by browser)
+                    window.open(result.demoUrl, '_blank');
+                } else {
+                    throw new Error(result.error);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                resultContainer.classList.add('active', 'error');
+                resultTitle.textContent = 'Error';
+                resultMessage.textContent = error.message || 'Failed to generate prototype';
+            } finally {
+                buildButton.disabled = false;
+                buildButton.textContent = 'Build Prototype';
+                statusContainer.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
