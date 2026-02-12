@@ -1,3 +1,157 @@
 {
-  "sessions": []
+  "sessions": [
+    {
+      "sessionId": "d29afc31-b8ef-484b-adb0-22bf9a427f24",
+      "timestamp": "2026-02-09T20:28:37.994Z",
+      "originalFilename": "whiteboard-2026-02-09T20-27-18-738Z.jpg",
+      "customPrompt": "",
+      "outputDir": "/Users/sarahforrest/whiteboard-to-prototype/__output__/prototype-2026-02-09T20-27-18-778Z",
+      "prototypeUrl": "/demos/prototype-2026-02-09T20-27-18-778Z/index.html",
+      "thumbnailUrl": "/demos/prototype-2026-02-09T20-27-18-778Z/thumbnail.jpg",
+      "tokens": {
+        "input": 1677,
+        "output": 7580
+      },
+      "cost": 0.593655,
+      "costs": {
+        "inputCost": "0.025155",
+        "outputCost": "0.568500",
+        "totalCost": "0.593655"
+      },
+      "duration": 78.74,
+      "model": "claude-opus-4-5-20251101",
+      "files": [
+        "index.html"
+      ],
+      "success": true
+    },
+    {
+      "sessionId": "51335333-d0a1-4be6-9f6e-fe10cdf44543",
+      "timestamp": "2026-02-04T22:14:46.079Z",
+      "originalFilename": "whiteboard-2026-02-04T22-12-59-118Z.jpg",
+      "customPrompt": "",
+      "outputDir": "/Users/sarahforrest/whiteboard-to-prototype/__output__/prototype-2026-02-04T22-12-59-199Z",
+      "prototypeUrl": "/demos/prototype-2026-02-04T22-12-59-199Z/index.html",
+      "thumbnailUrl": "/demos/prototype-2026-02-04T22-12-59-199Z/thumbnail.jpg",
+      "tokens": {
+        "input": 1677,
+        "output": 10403
+      },
+      "cost": 0.80538,
+      "costs": {
+        "inputCost": "0.025155",
+        "outputCost": "0.780225",
+        "totalCost": "0.805380"
+      },
+      "duration": 106.21,
+      "model": "claude-opus-4-5-20251101",
+      "files": [
+        "index.html"
+      ],
+      "success": true
+    },
+    {
+      "sessionId": "a3d625f0-c83d-4d1c-b883-e40fdb85a636",
+      "timestamp": "2026-02-04T22:08:58.006Z",
+      "originalFilename": "whiteboard-2026-02-04T22-04-49-908Z.jpg",
+      "customPrompt": "",
+      "outputDir": "/Users/sarahforrest/whiteboard-to-prototype/__output__/prototype-2026-02-04-1770242937981",
+      "prototypeUrl": "/demos/prototype-2026-02-04-1770242937981/index.html",
+      "thumbnailUrl": "/demos/prototype-2026-02-04-1770242937981/thumbnail.jpg",
+      "tokens": {
+        "input": 209167,
+        "output": 17619,
+        "total": 226786
+      },
+      "cost": 0.891786,
+      "costs": {
+        "inputCost": "0.627501",
+        "outputCost": "0.264285",
+        "totalCost": "0.891786"
+      },
+      "duration": 247.38,
+      "model": "claude-sonnet-4-5-20250929",
+      "files": [
+        "index.html"
+      ],
+      "iterations": 15,
+      "agentMode": true,
+      "success": true
+    },
+    {
+      "sessionId": "55b244ca-7a40-4576-977a-118a7e1daae2",
+      "timestamp": "2026-02-04T19:38:22.836Z",
+      "originalFilename": "whiteboard-2026-02-04T19-36-50-439Z.jpg",
+      "customPrompt": "",
+      "outputDir": "/Users/sarahforrest/whiteboard-to-prototype/__output__/prototype-2026-02-04T19-36-50-520Z",
+      "prototypeUrl": "/demos/prototype-2026-02-04T19-36-50-520Z/index.html",
+      "thumbnailUrl": "/demos/prototype-2026-02-04T19-36-50-520Z/thumbnail.jpg",
+      "tokens": {
+        "input": 1677,
+        "output": 9222
+      },
+      "cost": 0.716805,
+      "costs": {
+        "inputCost": "0.025155",
+        "outputCost": "0.691650",
+        "totalCost": "0.716805"
+      },
+      "duration": 91.61,
+      "model": "claude-opus-4-5-20251101",
+      "files": [
+        "index.html"
+      ],
+      "success": true
+    },
+    {
+      "sessionId": "37b7aef5-c4ef-455a-8d98-c56fd0c41667",
+      "timestamp": "2026-02-04T19:28:59.649Z",
+      "originalFilename": "whiteboard-2026-02-04T19-27-17-919Z.jpg",
+      "customPrompt": "",
+      "outputDir": "/Users/sarahforrest/whiteboard-to-prototype/__output__/prototype-2026-02-04T19-27-17-991Z",
+      "prototypeUrl": "/demos/prototype-2026-02-04T19-27-17-991Z/index.html",
+      "thumbnailUrl": "/demos/prototype-2026-02-04T19-27-17-991Z/thumbnail.jpg",
+      "tokens": {
+        "input": 1677,
+        "output": 10351
+      },
+      "cost": 0.80148,
+      "costs": {
+        "inputCost": "0.025155",
+        "outputCost": "0.776325",
+        "totalCost": "0.801480"
+      },
+      "duration": 100.98,
+      "model": "claude-opus-4-5-20251101",
+      "files": [
+        "index.html"
+      ],
+      "success": true
+    },
+    {
+      "sessionId": "aba7043f-2af7-46b9-b702-8802aa5983f2",
+      "timestamp": "2026-02-04T15:42:27.361Z",
+      "originalFilename": "whiteboard-2026-02-04T15-41-11-634Z.jpg",
+      "customPrompt": "",
+      "outputDir": "/Users/sarahforrest/whiteboard-to-prototype/__output__/prototype-2026-02-04T15-41-11-685Z",
+      "prototypeUrl": "/demos/prototype-2026-02-04T15-41-11-685Z/index.html",
+      "thumbnailUrl": "/demos/prototype-2026-02-04T15-41-11-685Z/thumbnail.jpg",
+      "tokens": {
+        "input": 1677,
+        "output": 7675
+      },
+      "cost": 0.60078,
+      "costs": {
+        "inputCost": "0.025155",
+        "outputCost": "0.575625",
+        "totalCost": "0.600780"
+      },
+      "duration": 75.23,
+      "model": "claude-opus-4-5-20251101",
+      "files": [
+        "index.html"
+      ],
+      "success": true
+    }
+  ]
 }
