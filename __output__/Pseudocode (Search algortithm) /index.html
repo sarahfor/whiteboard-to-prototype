@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Box Search Algorithm Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #030203;
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Flowchart Section */
+        .flowchart-section {
+            background: white;
+            border: 1px solid rgba(79, 172, 254, 0.15);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(79, 172, 254, 0.1);
+        }
+
+        .section-title {
+            color: #030203;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .flow-node {
+            background: white;
+            border: 2px solid rgba(79, 172, 254, 0.3);
+            border-radius: 15px;
+            padding: 15px 25px;
+            text-align: center;
+            font-size: 0.95rem;
+            color: #030203;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+            min-width: 180px;
+            max-width: 200px;
+        }
+
+        .flow-node.active {
+            background: #4facfe;
+            color: white;
+            border-color: #4facfe;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .flow-node.completed {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .flow-node.found {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #e65100;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .arrow {
+            width: 2px;
+            height: 30px;
+            background: rgba(79, 172, 254, 0.4);
+            position: relative;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid rgba(79, 172, 254, 0.6);
+        }
+
+        .arrow.active {
+            background: #4facfe;
+        }
+
+        .arrow.active::after {
+            border-top-color: #4facfe;
+        }
+
+        .branch-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            position: relative;
+            margin-top: 0;
+        }
+
+        .branch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .branch-arrow {
+            width: 60px;
+            height: 2px;
+            background: rgba(79, 172, 254, 0.4);
+            position: relative;
+        }
+
+        .branch-arrow.left {
+            transform: rotate(45deg);
+            transform-origin: right center;
+        }
+
+        .branch-arrow.right {
+            transform: rotate(-45deg);
+            transform-origin: left center;
+        }
+
+        .loop-arrow {
+            position: absolute;
+            left: -60px;
+            top: 50%;
+            width: 50px;
+            height: 150px;
+            border: 2px solid rgba(79, 172, 254, 0.4);
+            border-right: none;
+            border-top: 2px solid rgba(79, 172, 254, 0.4);
+            border-radius: 75px 0 0 75px;
+        }
+
+        .loop-arrow::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: -2px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 10px solid rgba(79, 172, 254, 0.6);
+        }
+
+        .loop-arrow.active {
+            border-color: #4facfe;
+        }
+
+        .loop-arrow.active::after {
+            border-bottom-color: #4facfe;
+        }
+
+        /* Visualization Section */
+        .visualization-section {
+            background: white;
+            border: 1px solid rgba(79, 172, 254, 0.15);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(79, 172, 254, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            background: #030203;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            font-weight: 500;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(3, 2, 3, 0.3);
+        }
+
+        button:active {
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        button.secondary {
+            background: white;
+            color: #030203;
+            border: 2px solid #030203;
+        }
+
+        button.secondary:hover {
+            background: #030203;
+            color: white;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .speed-control input {
+            width: 100px;
+            accent-color: #4facfe;
+        }
+
+        .pile-container {
+            margin-bottom: 30px;
+        }
+
+        .pile-label {
+            color: #030203;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pile-count {
+            background: #4facfe;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .pile {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            min-height: 80px;
+            padding: 20px;
+            background: rgba(79, 172, 254, 0.05);
+            border-radius: 15px;
+            border: 1px dashed rgba(79, 172, 254, 0.3);
+        }
+
+        .box {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+            border: 2px solid #bdbdbd;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+        }
+
+        .box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .box.checking {
+            background: linear-gradient(145deg, #4facfe, #5eb3d6);
+            border-color: #4facfe;
+            transform: scale(1.15);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+        }
+
+        .box.opened {
+            background: linear-gradient(145deg, #e8f5e9, #c8e6c9);
+            border-color: #4caf50;
+        }
+
+        .box.has-key {
+            background: linear-gradient(145deg, #fff3e0, #ffe0b2);
+            border-color: #ff9800;
+            animation: keyFound 0.6s ease-in-out;
+        }
+
+        @keyframes keyFound {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.2) rotate(-5deg); }
+            50% { transform: scale(1.2) rotate(5deg); }
+            75% { transform: scale(1.2) rotate(-5deg); }
+        }
+
+        .current-box-display {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(79, 172, 254, 0.05);
+            border-radius: 15px;
+        }
+
+        .current-box-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .current-box-content {
+            font-size: 3rem;
+            min-height: 60px;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 20px;
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 15px;
+            color: #030203;
+            font-weight: 500;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .status-message.success {
+            background: rgba(76, 175, 80, 0.15);
+            color: #2e7d32;
+        }
+
+        .status-message.searching {
+            background: rgba(79, 172, 254, 0.15);
+            color: #1976d2;
+        }
+
+        .status-message.empty {
+            background: rgba(244, 67, 54, 0.1);
+            color: #c62828;
+        }
+
+        .log-section {
+            margin-top: 30px;
+        }
+
+        .log-title {
+            color: #030203;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .log {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-entry.highlight {
+            color: #4facfe;
+            font-weight: 500;
+        }
+
+        .log-entry.success {
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .legend-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .legend-box.unchecked {
+            background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+            border: 1px solid #bdbdbd;
+        }
+
+        .legend-box.checking {
+            background: linear-gradient(145deg, #4facfe, #5eb3d6);
+        }
+
+        .legend-box.key {
+            background: linear-gradient(145deg, #fff3e0, #ffe0b2);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .box {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+
+            .flow-node {
+                padding: 10px 15px;
+                font-size: 0.85rem;
+                min-width: 140px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Box Search Algorithm</h1>
+        <p class="subtitle">Visualize searching through boxes to find a key using pseudocode logic</p>
+
+        <div class="main-content">
+            <!-- Flowchart Section -->
+            <div class="flowchart-section">
+                <h2 class="section-title">Pseudocode Flowchart</h2>
+                <div class="flowchart">
+                    <div class="flow-node" id="node-1">
+                        Make a pile of boxes to look through
+                    </div>
+                    <div class="arrow" id="arrow-1"></div>
+                    <div class="flow-node" id="node-2" style="position: relative;">
+                        While the pile is NOT empty
+                        <div class="loop-arrow" id="loop-arrow"></div>
+                    </div>
+                    <div class="arrow" id="arrow-2"></div>
+                    <div class="flow-node" id="node-3">
+                        Grab a Box
+                    </div>
+                    <div class="arrow" id="arrow-3"></div>
+                    <div class="branch-container">
+                        <div class="branch">
+                            <div class="flow-node" id="node-4a">
+                                If you find a BOX, add it to the pile of boxes
+                            </div>
+                        </div>
+                        <div class="branch">
+                            <div class="flow-node" id="node-4b">
+                                If you find a KEY, you're done!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Section -->
+            <div class="visualization-section">
+                <h2 class="section-title">Live Visualization</h2>
+                
+                <div class="controls">
+                    <button id="startBtn" onclick="startSearch()">▶ Start Search</button>
+                    <button id="stepBtn" class="secondary" onclick="stepSearch()">⏭ Step</button>
+                    <button id="resetBtn" class="secondary" onclick="resetSearch()">↻ Reset</button>
+                    <div class="speed-control">
+                        <label for="speed">Speed:</label>
+                        <input type="range" id="speed" min="100" max="2000" value="800">
+                    </div>
+                </div>
+
+                <div class="pile-container">
+                    <div class="pile-label">
+                        Pile of Boxes
+                        <span class="pile-count" id="pileCount">0</span>
+                    </div>
+                    <div class="pile" id="pile"></div>
+                </div>
+
+                <div class="current-box-display">
+                    <div class="current-box-label">Currently Checking:</div>
+                    <div class="current-box-content" id="currentBox">—</div>
+                </div>
+
+                <div class="status-message" id="status">
+                    Click "Start Search" or "Step" to begin the algorithm
+                </div>
+
+                <div class="log-section">
+                    <div class="log-title">Algorithm Log</div>
+                    <div class="log" id="log"></div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box unchecked">📦</div>
+                        <span>Unchecked Box</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box checking">📦</div>
+                        <span>Checking</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box key">🔑</div>
+                        <span>Key Found!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let boxes = [];
+        let pile = [];
+        let isRunning = false;
+        let currentStep = 0;
+        let keyFound = false;
+        let intervalId = null;
+
+        // Box types
+        const BOX_CONTENTS = ['📦', '📦', '📦', '🔑', '📦', '📦'];
+        const NESTED_BOXES = [
+            { contains: '📦', nested: ['📦', '🔑'] },
+            { contains: '📦', nested: ['📦'] },
+            { contains: '🔑', nested: null },
+            { contains: '📦', nested: ['📦', '📦'] },
+        ];
+
+        // Initialize
+        function init() {
+            generateBoxes();
+            renderPile();
+            updatePileCount();
+            clearLog();
+            addLog('Initialized pile with ' + pile.length + ' boxes');
+            highlightNode(1);
+        }
+
+        function generateBoxes() {
+            boxes = [];
+            pile = [];
+            
+            // Create initial boxes with random contents
+            const numBoxes = Math.floor(Math.random() * 4) + 4; // 4-7 boxes
+            const keyPosition = Math.floor(Math.random() * numBoxes);
+            
+            for (let i = 0; i < numBoxes; i++) {
+                const hasKey = i === keyPosition;
+                const hasNestedBox = !hasKey && Math.random() > 0.5;
+                
+                boxes.push({
+                    id: i,
+                    content: hasKey ? '🔑' : (hasNestedBox ? '📦' : '∅'),
+                    checked: false,
+                    hasKey: hasKey,
+                    hasNestedBox: hasNestedBox
+                });
+                
+                pile.push(boxes[i]);
+            }
+        }
+
+        function renderPile() {
+            const pileEl = document.getElementById('pile');
+            pileEl.innerHTML = '';
+            
+            pile.forEach((box, index) => {
+                const boxEl = document.createElement('div');
+                boxEl.className = 'box';
+                boxEl.dataset.id = box.id;
+                boxEl.innerHTML = '📦';
+                boxEl.title = `Box #${box.id + 1}`;
+                
+                if (box.checked) {
+                    boxEl.classList.add('opened');
+                    boxEl.innerHTML = box.content;
+                }
+                
+                if (box.hasKey && box.checked) {
+                    boxEl.classList.add('has-key');
+                }
+                
+                pileEl.appendChild(boxEl);
+            });
+        }
+
+        function updatePileCount() {
+            document.getElementById('pileCount').textContent = pile.filter(b => !b.checked).length;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function addLog(message, type = '') {
+            const logEl = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateStatus(message, type = '') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message ' + type;
+        }
+
+        function highlightNode(nodeNum) {
+            // Reset all nodes
+            document.querySelectorAll('.flow-node').forEach(n => {
+                n.classList.remove('active', 'found');
+            });
+            document.querySelectorAll('.arrow').forEach(a => {
+                a.classList.remove('active');
+            });
+            document.getElementById('loop-arrow').classList.remove('active');
+            
+            // Highlight current node
+            const node = document.getElementById('node-' + nodeNum);
+            if (node) {
+                node.classList.add('active');
+            }
+            
+            // Highlight arrows leading to this node
+            if (nodeNum === 2) {
+                document.getElementById('arrow-1').classList.add('active');
+            } else if (nodeNum === 3) {
+                document.getElementById('arrow-2').classList.add('active');
+            } else if (nodeNum === '4a' || nodeNum === '4b') {
+                document.getElementById('arrow-3').classList.add('active');
+            }
+        }
+
+        function highlightFoundNode(nodeId) {
+            const node = document.getElementById('node-' + nodeId);
+            if (node) {
+                node.classList.remove('active');
+                node.classList.add('found');
+            }
+        }
+
+        async function startSearch() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stepBtn').disabled = true;
+            
+            const speed = 2100 - document.getElementById('speed').value;
+            
+            while (!keyFound && pile.some(b => !b.checked)) {
+                await performStep(speed);
+                if (!isRunning) break;
+            }
+            
+            isRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stepBtn').disabled = keyFound;
+        }
+
+        function stepSearch() {
+            if (keyFound) return;
+            performStep(0);
+        }
+
+        async function performStep(delay) {
+            // Step 1: Check if pile is not empty
+            highlightNode(2);
+            updateStatus('Checking if pile is not empty...', 'searching');
+            addLog('Checking pile: ' + pile.filter(b => !b.checked).length + ' boxes remaining');
+            
+            if (delay) await sleep(delay / 2);
+            
+            const uncheckedBoxes = pile.filter(b => !b.checked);
+            
+            if (uncheckedBoxes.length === 0) {
+                updateStatus('Pile is empty! Key was not found.', 'empty');
+                addLog('Pile is empty - search complete without finding key', 'highlight');
+                return;
+            }
+            
+            // Step 2: Grab a box
+            highlightNode(3);
+            updateStatus('Grabbing a box from the pile...', 'searching');
+            
+            if (delay) await sleep(delay / 2);
+            
+            const currentBox = uncheckedBoxes[0];
+            currentBox.checked = true;
+            
+            // Highlight the box being checked
+            const boxElements = document.querySelectorAll('.box');
+            boxElements.forEach(el => el.classList.remove('checking'));
+            
+            const currentBoxEl = document.querySelector(`.box[data-id="${currentBox.id}"]`);
+            if (currentBoxEl) {
+                currentBoxEl.classList.add('checking');
+            }
+            
+            document.getElementById('currentBox').innerHTML = '📦➜❓';
+            addLog('Grabbed box #' + (currentBox.id + 1), 'highlight');
+            
+            if (delay) await sleep(delay);
+            
+            // Step 3: Check contents
+            document.getElementById('currentBox').innerHTML = currentBox.content || '∅';
+            
+            if (currentBox.hasKey) {
+                // Found the key!
+                highlightNode('4b');
+                highlightFoundNode('4b');
+                keyFound = true;
+                
+                if (currentBoxEl) {
+                    currentBoxEl.classList.remove('checking');
+                    currentBoxEl.classList.add('has-key');
+                    currentBoxEl.innerHTML = '🔑';
+                }
+                
+                updateStatus('🎉 KEY FOUND! Search complete!', 'success');
+                addLog('🔑 FOUND THE KEY in box #' + (currentBox.id + 1) + '!', 'success');
+                
+                document.getElementById('currentBox').innerHTML = '🔑 ✓';
+                
+            } else if (currentBox.hasNestedBox) {
+                // Found another box
+                highlightNode('4a');
+                
+                if (currentBoxEl) {
+                    currentBoxEl.classList.remove('checking');
+                    currentBoxEl.classList.add('opened');
+                    currentBoxEl.innerHTML = '📦';
+                }
+                
+                addLog('Found a nested box inside! Adding to pile...');
+                updateStatus('Found another box! Adding to pile...', 'searching');
+                
+                if (delay) await sleep(delay / 2);
+                
+                // Add new box to pile
+                const newBox = {
+                    id: boxes.length,
+                    content: Math.random() > 0.6 ? '🔑' : (Math.random() > 0.5 ? '📦' : '∅'),
+                    checked: false,
+                    hasKey: false,
+                    hasNestedBox: false
+                };
+                
+                // Determine if this new box has the key
+                if (newBox.content === '🔑') {
+                    newBox.hasKey = true;
+                } else if (newBox.content === '📦') {
+                    newBox.hasNestedBox = true;
+                }
+                
+                boxes.push(newBox);
+                pile.push(newBox);
+                
+                addLog('Added new box #' + (newBox.id + 1) + ' to the pile');
+                
+                // Show loop arrow
+                document.getElementById('loop-arrow').classList.add('active');
+                
+            } else {
+                // Empty box
+                if (currentBoxEl) {
+                    currentBoxEl.classList.remove('checking');
+                    currentBoxEl.classList.add('opened');
+                    currentBoxEl.innerHTML = '∅';
+                }
+                
+                addLog('Box #' + (currentBox.id + 1) + ' was empty');
+                updateStatus('Box was empty. Continuing search...', 'searching');
+                
+                // Show loop arrow
+                document.getElementById('loop-arrow').classList.add('active');
+            }
+            
+            renderPile();
+            updatePileCount();
+            
+            if (delay) await sleep(delay / 2);
+        }
+
+        function resetSearch() {
+            isRunning = false;
+            keyFound = false;
+            currentStep = 0;
+            
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stepBtn').disabled = false;
+            document.getElementById('currentBox').innerHTML = '—';
+            
+            init();
+            updateStatus('Click "Start Search" or "Step" to begin the algorithm');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
