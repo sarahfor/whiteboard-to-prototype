@@ -7,85 +7,217 @@
     <style>
         :root {
             color-scheme: light;
-            font-family: "Avenir Next", "Segoe UI", sans-serif;
-            --bg: #eef5ff;
-            --ink: #10213a;
-            --muted: #60718d;
+            --bg: #ffffff;
+            --ink: #0f172a;
+            --muted: #5b6b84;
+            --line: rgba(37, 99, 235, 0.12);
+            --surface: rgba(255, 255, 255, 0.94);
             --accent: #2563eb;
-            --glass-border: rgba(255, 255, 255, 0.48);
+            --accent-2: #0ea5e9;
+            --shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+            font-family: "Avenir Next", "Segoe UI", sans-serif;
         }
 
         * {
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
             margin: 0;
-            min-height: 100vh;
+            min-height: 100%;
+            background: var(--bg);
+            color: var(--ink);
+        }
+
+        body {
+            position: relative;
             display: grid;
             place-items: center;
-            position: relative;
             padding: 24px;
-            background: linear-gradient(180deg, var(--bg) 0%, #ffffff 100%);
-            color: var(--ink);
             overflow: hidden;
+        }
+
+        #networkCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.94;
         }
 
         .card {
             position: relative;
-            overflow: hidden;
-            width: min(620px, 100%);
-            padding: 32px;
+            z-index: 1;
+            width: min(720px, 100%);
+            padding: 36px;
             border-radius: 28px;
-            background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.16)),
-                rgba(255, 255, 255, 0.2);
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
-            backdrop-filter: blur(28px) saturate(165%);
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: var(--shadow);
             text-align: center;
         }
 
-        .card::after {
-            content: "";
-            position: absolute;
-            inset: 1px 1px auto 1px;
-            height: 46%;
-            border-radius: inherit;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0));
-            pointer-events: none;
+        .eyebrow {
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #91a0b9;
         }
 
         h1 {
-            margin: 0 0 14px;
-            font-size: clamp(32px, 6vw, 54px);
+            margin: 12px 0 14px;
+            font-size: clamp(36px, 6vw, 58px);
             line-height: 0.98;
-            letter-spacing: -0.04em;
+            letter-spacing: -0.045em;
+            color: #4f5668;
         }
 
         p {
-            margin: 0 0 22px;
+            margin: 0 auto 24px;
+            max-width: 34ch;
             color: var(--muted);
             line-height: 1.7;
+            font-size: 16px;
         }
 
         a {
-            display: inline-block;
-            padding: 14px 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 54px;
+            padding: 14px 22px;
             border-radius: 999px;
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.92) 0%, rgba(14, 165, 233, 0.86) 100%);
             color: white;
             text-decoration: none;
+            font-size: 14px;
             font-weight: 800;
-            box-shadow: 0 18px 36px rgba(37, 99, 235, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+            box-shadow: 0 16px 30px rgba(37, 99, 235, 0.2);
         }
     </style>
 </head>
 <body>
+    <canvas id="networkCanvas" aria-hidden="true"></canvas>
+
     <div class="card">
+        <div class="eyebrow">Preview unavailable</div>
         <h1>Prototype not found</h1>
-        <p>The preview you requested is no longer available or has not finished generating yet.</p>
+        <p>The preview you requested is no longer available or has not finished generating yet. Return to the builder to start a fresh demo.</p>
         <a href="/">Back to builder</a>
     </div>
+
+    <script>
+        const networkCanvas = document.getElementById('networkCanvas');
+        const context = networkCanvas.getContext('2d');
+
+        if (context) {
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const particles = [];
+            const particleCount = prefersReducedMotion
+                ? 28
+                : Math.min(72, Math.max(42, Math.floor(window.innerWidth / 22)));
+
+            function resizeCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                networkCanvas.width = Math.floor(window.innerWidth * dpr);
+                networkCanvas.height = Math.floor(window.innerHeight * dpr);
+                context.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * window.innerWidth;
+                    this.y = Math.random() * window.innerHeight;
+                    this.vx = (Math.random() - 0.5) * 0.24;
+                    this.vy = (Math.random() - 0.5) * 0.24;
+                    this.size = Math.random() * 2.2 + 1;
+                }
+
+                update() {
+                    if (prefersReducedMotion) {
+                        return;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.x < -20 || this.x > window.innerWidth + 20) {
+                        this.vx *= -1;
+                    }
+
+                    if (this.y < -20 || this.y > window.innerHeight + 20) {
+                        this.vy *= -1;
+                    }
+                }
+
+                draw() {
+                    context.beginPath();
+                    context.fillStyle = 'rgba(79, 172, 254, 0.42)';
+                    context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    context.fill();
+                }
+            }
+
+            function seedParticles() {
+                particles.length = 0;
+                for (let index = 0; index < particleCount; index += 1) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function drawConnections() {
+                for (let i = 0; i < particles.length; i += 1) {
+                    const first = particles[i];
+
+                    for (let j = i + 1; j < particles.length; j += 1) {
+                        const second = particles[j];
+                        const dx = first.x - second.x;
+                        const dy = first.y - second.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance > 140) {
+                            continue;
+                        }
+
+                        context.strokeStyle = `rgba(79, 172, 254, ${0.2 - distance / 850})`;
+                        context.lineWidth = 1;
+                        context.beginPath();
+                        context.moveTo(first.x, first.y);
+                        context.lineTo(second.x, second.y);
+                        context.stroke();
+                    }
+                }
+            }
+
+            function render() {
+                context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+                particles.forEach((particle) => {
+                    particle.update();
+                    particle.draw();
+                });
+
+                drawConnections();
+
+                if (!prefersReducedMotion) {
+                    window.requestAnimationFrame(render);
+                }
+            }
+
+            resizeCanvas();
+            seedParticles();
+            render();
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                seedParticles();
+                if (prefersReducedMotion) {
+                    render();
+                }
+            });
+        }
+    </script>
 </body>
 </html>

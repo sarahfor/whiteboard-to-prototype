@@ -36,7 +36,7 @@
 
     body {
       position: relative;
-      padding: 24px;
+      padding: 18px;
       overflow-x: clip;
     }
 
@@ -61,7 +61,7 @@
     .shell {
       position: relative;
       z-index: 1;
-      width: min(1400px, 100%);
+      width: min(1280px, 100%);
       margin: 0 auto;
     }
 
@@ -126,11 +126,16 @@
       background: rgba(255, 255, 255, 0.92);
     }
 
+    .button.subtle {
+      background: #f7faff;
+      color: var(--ink);
+    }
+
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
-      gap: 22px;
-      margin-top: 22px;
+      grid-template-columns: minmax(0, 0.92fr) minmax(400px, 1.08fr);
+      gap: 18px;
+      margin-top: 18px;
       align-items: start;
     }
 
@@ -143,40 +148,40 @@
     }
 
     .hero {
-      padding: 44px;
+      padding: 36px;
       display: grid;
-      gap: 22px;
-      min-height: 760px;
+      gap: 18px;
+      min-height: 680px;
       align-content: start;
     }
 
     h1 {
       margin: 0;
       max-width: 8.5ch;
-      font-size: clamp(56px, 8vw, 100px);
-      line-height: 0.93;
+      font-size: clamp(50px, 6.8vw, 84px);
+      line-height: 0.94;
       letter-spacing: -0.055em;
       color: #4f5668;
     }
 
     .hero-copy {
-      max-width: 13ch;
-      font-size: 18px;
-      line-height: 1.7;
+      max-width: 27ch;
+      font-size: 16px;
+      line-height: 1.66;
       color: var(--muted);
     }
 
     .hero-actions {
       display: grid;
-      gap: 18px;
-      width: min(420px, 100%);
+      gap: 16px;
+      width: min(390px, 100%);
       margin-top: auto;
     }
 
     .hero-status {
       display: grid;
       gap: 10px;
-      padding: 24px 28px;
+      padding: 20px 24px;
       border-radius: 24px;
       border: 1px solid var(--line);
       background: var(--surface-soft);
@@ -196,6 +201,10 @@
       color: var(--muted);
     }
 
+    .hero-status .button {
+      width: fit-content;
+    }
+
     .hero-status em {
       font-style: normal;
       font-weight: 800;
@@ -203,9 +212,9 @@
     }
 
     .builder {
-      padding: 34px;
+      padding: 28px;
       display: grid;
-      gap: 24px;
+      gap: 20px;
     }
 
     .builder-head {
@@ -215,25 +224,25 @@
 
     .builder-head h2 {
       margin: 0;
-      font-size: clamp(34px, 4vw, 54px);
-      line-height: 0.98;
+      font-size: clamp(30px, 3.6vw, 44px);
+      line-height: 1;
       letter-spacing: -0.045em;
     }
 
     .builder-head p {
       margin: 0;
       color: var(--muted);
-      font-size: 18px;
-      line-height: 1.6;
+      font-size: 16px;
+      line-height: 1.55;
     }
 
     .builder-block {
       display: grid;
-      gap: 22px;
-      padding: 28px;
+      gap: 20px;
+      padding: 24px;
       border-radius: 26px;
       border: 1px solid var(--line);
-      background: linear-gradient(180deg, #fbfdff 0%, #f7faff 100%);
+      background: linear-gradient(180deg, #fcfdff 0%, #f7faff 100%);
     }
 
     .step-head {
@@ -257,7 +266,7 @@
 
     .step-copy {
       display: grid;
-      gap: 6px;
+      gap: 8px;
     }
 
     .step-copy strong {
@@ -267,14 +276,15 @@
 
     .step-copy span {
       color: var(--muted);
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1.6;
+      max-width: 34ch;
     }
 
     .sample-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+      gap: 16px;
     }
 
     .sample-card {
@@ -282,10 +292,18 @@
       flex-direction: column;
       gap: 16px;
       min-height: 100%;
-      padding: 20px;
-      border-radius: 26px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.94);
+      padding: 16px;
+      border-radius: 28px;
+      border: 1px solid rgba(37, 99, 235, 0.1);
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .sample-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(37, 99, 235, 0.18);
+      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.07);
     }
 
     .sample-image-button {
@@ -294,7 +312,7 @@
       padding: 0;
       border: 0;
       background: transparent;
-      border-radius: 18px;
+      border-radius: 22px;
       overflow: hidden;
       cursor: zoom-in;
     }
@@ -302,42 +320,58 @@
     .sample-image-button img {
       display: block;
       width: 100%;
-      height: 258px;
+      aspect-ratio: 1 / 1;
       object-fit: cover;
       border: 1px solid rgba(15, 23, 42, 0.06);
-      border-radius: 18px;
+      border-radius: 22px;
+      transition: transform 180ms ease;
+    }
+
+    .sample-card:hover .sample-image-button img {
+      transform: scale(1.015);
     }
 
     .sample-copy {
       display: grid;
-      gap: 8px;
+      gap: 10px;
       align-content: start;
-      min-height: 132px;
+      min-height: 138px;
+    }
+
+    .sample-kicker {
+      font-size: 11px;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+      color: #8ea0bf;
+      font-weight: 700;
     }
 
     .sample-copy strong {
-      font-size: 22px;
+      font-size: 18px;
       letter-spacing: -0.03em;
-      line-height: 1.15;
+      line-height: 1.18;
     }
 
     .sample-copy p {
       margin: 0;
       color: var(--muted);
-      font-size: 15px;
-      line-height: 1.7;
+      font-size: 14px;
+      line-height: 1.6;
     }
 
     .sample-actions {
-      display: flex;
-      gap: 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 10px;
       margin-top: auto;
-      flex-wrap: wrap;
     }
 
     .sample-actions .button {
-      flex: 1;
-      min-width: 170px;
+      width: 100%;
+      min-width: 0;
+      min-height: 48px;
+      padding-left: 16px;
+      padding-right: 16px;
     }
 
     .site-footer {
@@ -465,10 +499,13 @@
         grid-template-columns: 1fr;
       }
 
-      .sample-actions,
       .sample-modal-head {
         flex-direction: column;
         align-items: stretch;
+      }
+
+      .sample-actions {
+        grid-template-columns: 1fr;
       }
 
       .sample-actions .button {
@@ -476,7 +513,7 @@
       }
 
       h1 {
-        font-size: 56px;
+        font-size: 52px;
         max-width: 9ch;
       }
     }
@@ -497,12 +534,12 @@
       <section class="panel hero">
         <div class="eyebrow">Sketch to demo in one flow</div>
         <h1>Turn any whiteboard sketch into a product demo.</h1>
-        <p class="hero-copy">Use one of the built-in sketches for a fast walkthrough. Preview the original whiteboard first, then open the finished sample prototype in your browser.</p>
+        <p class="hero-copy">Start with a built-in sketch for a quick walkthrough. Preview the original whiteboard first, then open the finished sample prototype in your browser.</p>
         <div class="hero-actions">
           <a class="button primary" href="#builder">Build a sample prototype</a>
           <div class="hero-status">
-            <strong>Sample builds</strong>
-            <p><em>Build this prototype</em> opens a public sample demo anyone can explore. Use preview to inspect the original whiteboard first.</p>
+            <strong>GitHub</strong>
+            <a class="button subtle" href="https://github.com/sarahfor/whiteboard-to-prototype" target="_blank" rel="noopener noreferrer">View repo on GitHub</a>
           </div>
         </div>
       </section>
@@ -528,12 +565,13 @@
                 <img src="assets/algebra-whiteboard.jpg" alt="Algebra practice whiteboard sample">
               </button>
               <div class="sample-copy">
+                <span class="sample-kicker">Structured learning flow</span>
                 <strong>Algebra practice dashboard</strong>
                 <p>Useful for forms, progress widgets, and structured learning flows.</p>
               </div>
               <div class="sample-actions">
-                <button class="button secondary sample-preview-button" type="button" data-preview-src="assets/algebra-whiteboard.jpg" data-preview-title="Algebra practice dashboard" data-preview-description="Whiteboard sketch for a structured learning flow with exercises, progress tracking, and focused utility UI.">Preview image</button>
-                <a class="button secondary" href="https://sarahfor.github.io/algebra-learning-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
+                <button class="button subtle sample-preview-button" type="button" data-preview-src="assets/algebra-whiteboard.jpg" data-preview-title="Algebra practice dashboard" data-preview-description="Whiteboard sketch for a structured learning flow with exercises, progress tracking, and focused utility UI.">Preview image</button>
+                <a class="button primary" href="https://sarahfor.github.io/algebra-learning-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
               </div>
             </article>
 
@@ -542,12 +580,13 @@
                 <img src="assets/box-search-whiteboard.jpg" alt="Box search algorithm whiteboard sample">
               </button>
               <div class="sample-copy">
+                <span class="sample-kicker">Process walkthrough</span>
                 <strong>Box search algorithm explainer</strong>
                 <p>Useful for turning a rough process diagram into a clearer educational or step-by-step interactive demo.</p>
               </div>
               <div class="sample-actions">
-                <button class="button secondary sample-preview-button" type="button" data-preview-src="assets/box-search-whiteboard.jpg" data-preview-title="Box search algorithm explainer" data-preview-description="Whiteboard sketch for a visual pseudocode flow that can become a polished learning demo or algorithm walkthrough.">Preview image</button>
-                <a class="button secondary" href="https://sarahfor.github.io/box-search-algorithm-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
+                <button class="button subtle sample-preview-button" type="button" data-preview-src="assets/box-search-whiteboard.jpg" data-preview-title="Box search algorithm explainer" data-preview-description="Whiteboard sketch for a visual pseudocode flow that can become a polished learning demo or algorithm walkthrough.">Preview image</button>
+                <a class="button primary" href="https://sarahfor.github.io/box-search-algorithm-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
               </div>
             </article>
           </div>
