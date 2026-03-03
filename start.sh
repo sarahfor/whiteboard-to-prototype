@@ -31,10 +31,11 @@ if [ ! -f .env ]; then
         cp .env.example .env
         echo "   ✅ .env file created"
         echo ""
-        echo "   ⚠️  IMPORTANT: Edit .env and add your ANTHROPIC_API_KEY"
-        echo "   Get your key from: https://console.anthropic.com/settings/keys"
+        echo "   ℹ️  You can add ANTHROPIC_API_KEY here for a default server key"
+        echo "   or enter your own key later in the browser."
+        echo "   Get a key from: https://console.anthropic.com"
         echo ""
-        read -p "Press Enter once you've added your API key to .env..."
+        read -p "Press Enter once you're ready to continue..."
     else
         echo "   ❌ Error: .env.example not found"
         exit 1
@@ -50,18 +51,10 @@ if [ ! -d node_modules ]; then
 fi
 
 # Check if API key is set
-API_KEY_VALUE=$(grep -E '^ANTHROPIC_API_KEY=' .env | head -n 1 | cut -d'=' -f2-)
-if [ -z "$API_KEY_VALUE" ] || [ "$API_KEY_VALUE" = "your_anthropic_api_key_here" ]; then
+if ! grep -q "ANTHROPIC_API_KEY=sk-ant-" .env; then
     echo ""
-    echo "⚠️  WARNING: ANTHROPIC_API_KEY not set in .env file"
-    echo "   The server will fail to start without a valid API key"
-    echo ""
-    read -p "Continue anyway? (y/N): " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Cancelled."
-        exit 1
-    fi
+    echo "ℹ️  No default ANTHROPIC_API_KEY found in .env"
+    echo "   The app will still start, and users can add their own key in the browser."
 fi
 
 echo ""

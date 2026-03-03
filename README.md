@@ -1,29 +1,36 @@
 # Whiteboard to Prototype
 
-Turn a whiteboard sketch into a product demo.
+Turn a whiteboard sketch into a working prototype.
 
-Whiteboard to Prototype is a Node/Express app that takes a whiteboard photo, sends it to Anthropic, and returns a self-contained HTML prototype you can preview, open in a browser, and download.
+This repo contains two different surfaces:
+
+- The real product app in [public/index.html](/Users/sarahforrest/whiteboard-to-prototype/public/index.html)
+- The static GitHub Pages landing page in [index.html](/Users/sarahforrest/whiteboard-to-prototype/index.html)
+
+The live product is a Node/Express app that accepts a whiteboard photo, sends it to Anthropic, and saves a generated self-contained HTML demo into `__output__/`.
 
 ## What the product does
 
-- Upload a whiteboard sketch or start from a built-in sample
-- Add optional product direction before generation
-- Generate a clickable HTML demo from the sketch
-- Preview the result inside the app or open the raw HTML in a new tab
-- Download the generated file
-- Review completed builds in session history
+- Upload a whiteboard photo from desktop or phone
+- Preview the whiteboard before building
+- Add optional build direction
+- Generate a working HTML prototype
+- Open the finished prototype in a new browser tab
+- Review previous generations in the history page
+- Let users supply their own Anthropic API key for the current browser session
 
-## Project structure
+## Current product structure
 
-- [public/index.html](public/index.html): real app UI
-- [public/history.html](public/history.html): history page
-- [public/not-found.html](public/not-found.html): missing preview fallback
-- [server.js](server.js): Express server, generation flow, previews, downloads, history
-- [index.html](index.html): static GitHub Pages landing page
-- [render.yaml](render.yaml): Render deployment blueprint
-- [DEPLOY_RENDER.md](DEPLOY_RENDER.md): Render deployment notes
+- [server.js](/Users/sarahforrest/whiteboard-to-prototype/server.js): Express server, Anthropic generation flow, history API
+- [public/index.html](/Users/sarahforrest/whiteboard-to-prototype/public/index.html): actual upload/build interface
+- [public/history.html](/Users/sarahforrest/whiteboard-to-prototype/public/history.html): history UI
+- [index.html](/Users/sarahforrest/whiteboard-to-prototype/index.html): static GitHub Pages marketing/demo page
+- [start.sh](/Users/sarahforrest/whiteboard-to-prototype/start.sh): local startup helper
+- [uploads/](/Users/sarahforrest/whiteboard-to-prototype/uploads): temporary uploaded whiteboard images
+- [__output__/](/Users/sarahforrest/whiteboard-to-prototype/__output__): generated demos
+- [history/](/Users/sarahforrest/whiteboard-to-prototype/history): saved generation history
 
-## Local development
+## Local setup
 
 1. Install dependencies
 
@@ -37,19 +44,11 @@ npm install
 cp .env.example .env
 ```
 
-3. Add your Anthropic configuration
+3. Add an Anthropic key if you want a default server key
 
 ```env
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
-ANTHROPIC_MODEL=claude-sonnet-4-5
 PORT=3000
-```
-
-Optional:
-
-```env
-# store uploads, generated demos, and history outside the repo
-DATA_ROOT=/absolute/path/to/persistent/storage
 ```
 
 4. Start the app
@@ -58,44 +57,41 @@ DATA_ROOT=/absolute/path/to/persistent/storage
 npm start
 ```
 
-5. Open the app
+Or:
 
-- `http://localhost:3000`
-- `http://localhost:3000/history.html`
-- `http://localhost:3000/health`
+```bash
+./start.sh
+```
 
 ## Anthropic key behavior
 
 The app supports two ways to run builds:
 
-- Default server key via `ANTHROPIC_API_KEY` in `.env`
-- Per-session browser key supplied by the user in the UI
+- A default server key from `.env`
+- A user-provided Anthropic key stored only in the current browser session
 
-If no default server key is set, the server still starts. Users can add their own Anthropic key during their browser session to run demos.
+That means the app can still start even if `.env` does not contain a key. In that case, a user can enter their own Anthropic key in the UI and use the tool with their own credits.
 
-## API routes
+## Main routes
 
-- `GET /`: main app
-- `POST /upload`: generate a prototype from an uploaded whiteboard
-- `POST /jobs/:sessionId/cancel`: cancel an in-flight generation
-- `GET /history`: session history JSON
-- `GET /preview/:demoId`: sandboxed preview wrapper
-- `GET /embed/:demoId`: raw generated HTML for browser preview
-- `GET /download/:demoId`: download generated HTML
-- `GET /thumbnail/:demoId`: generated thumbnail
-- `GET /health`: app health and config status
+- `GET /`: main builder UI
+- `GET /history.html`: history page
+- `POST /upload`: upload a whiteboard and generate a prototype
+- `GET /history`: history JSON
+- `GET /health`: app health and key availability status
+- `GET /demos/:demoId/index.html`: generated prototype output
+- `GET /demos/:demoId/thumbnail.jpg`: generated thumbnail
 
-## Deployment
+## GitHub Pages vs product app
 
-GitHub Pages can only host the static landing page in [index.html](index.html). It cannot run the live generation flow.
+The root [index.html](/Users/sarahforrest/whiteboard-to-prototype/index.html) is the static GitHub Pages version.
 
-To deploy the real app, use a host that runs Node and can keep the Anthropic key private. This repo includes Render configuration:
+It is not the real builder.
 
-- [render.yaml](render.yaml)
-- [DEPLOY_RENDER.md](DEPLOY_RENDER.md)
+The actual product experience lives in [public/index.html](/Users/sarahforrest/whiteboard-to-prototype/public/index.html) and requires the Node server in [server.js](/Users/sarahforrest/whiteboard-to-prototype/server.js).
 
 ## Notes
 
-- Generated demos, uploads, and local history are app data, not source code.
-- Temporary upload files are cleaned up after generation.
-- The real product experience lives in [public/index.html](public/index.html), not the root landing page.
+- Generated demos and history are app data, not source assets.
+- Uploaded originals and compressed copies are cleaned up after generation.
+- The current builder is the restored Claude Agent SDK style product flow, not the newer preview-wrapper version.

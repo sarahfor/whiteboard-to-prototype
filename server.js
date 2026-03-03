@@ -1,11 +1,12 @@
 import express from 'express';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
-import { basename, dirname, join, resolve } from 'path';
+import { dirname, join } from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import sharp from 'sharp';
 import dotenv from 'dotenv';
+import Anthropic from '@anthropic-ai/sdk';
 import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
@@ -14,39 +15,37 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-app.disable('x-powered-by');
-
 const PORT = process.env.PORT || 3000;
-const DATA_ROOT = resolve(process.env.DATA_ROOT || __dirname);
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
 
 const CONFIG = {
-    DATA_ROOT,
-    UPLOADS_DIR: join(DATA_ROOT, 'uploads'),
-    OUTPUT_DIR: join(DATA_ROOT, '__output__'),
-    HISTORY_DIR: join(DATA_ROOT, 'history'),
-    HISTORY_FILE: join(DATA_ROOT, 'history', 'whiteboard-history.json'),
-    ASSETS_DIR: join(__dirname, 'assets'),
-    MAX_IMAGE_SIZE: 768,
-    MAX_UPLOAD_SIZE: 25 * 1024 * 1024,
-    MODEL: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5',
-    MAX_TOKENS: 8192,
-    FALLBACK_MODEL: process.env.ANTHROPIC_FALLBACK_MODEL || '',
-    COST_PER_MILLION_INPUT: 3,
-    COST_PER_MILLION_OUTPUT: 15
+    UPLOADS_DIR: join(__dirname, 'uploads'),
+    OUTPUT_DIR: join(__dirname, '__output__'),
+    HISTORY_FILE: join(__dirname, 'history', 'whiteboard-history.json'),
+    MAX_IMAGE_SIZE: 1024,
+    MODEL: 'claude-opus-4-5-20251101',
+    MAX_TOKENS: 16384,
+    COST_PER_MILLION_INPUT: 15,
+    COST_PER_MILLION_OUTPUT: 75
 };
+
+// ============================================================================
+// LOGGING UTILITIES
+// ============================================================================
 
 const LOG_PREFIX = {
     SERVER: '[SERVER]',
     UPLOAD: '[UPLOAD]',
-    JOB: '[JOB]',
-    MODEL: '[MODEL]',
+    CLAUDE: '[CLAUDE]',
+    BUILD: '[BUILD]',
     HISTORY: '[HISTORY]',
     ERROR: '[ERROR]',
     SUCCESS: '[SUCCESS]',
     INFO: '[INFO]'
 };
-
-const inFlightJobs = new Map();
 
 function log(prefix, message, data = null) {
     const timestamp = new Date().toISOString();
@@ -56,127 +55,353 @@ function log(prefix, message, data = null) {
     }
 }
 
+// ============================================================================
+// FILE SYSTEM UTILITIES
+// ============================================================================
+
 async function ensureDirectories() {
-    const directories = [
+    const dirs = [
         CONFIG.UPLOADS_DIR,
         CONFIG.OUTPUT_DIR,
-        CONFIG.HISTORY_DIR
+        join(__dirname, 'history')
     ];
 
-    for (const directory of directories) {
-        if (!existsSync(directory)) {
-            await fs.mkdir(directory, { recursive: true });
-            log(LOG_PREFIX.SERVER, 'Created directory', { directory });
+    for (const dir of dirs) {
+        if (!existsSync(dir)) {
+            await fs.mkdir(dir, { recursive: true });
+            log(LOG_PREFIX.SERVER, `Created directory: ${dir}`);
         }
     }
-}
-
-function buildPreviewUrl(demoId) {
-    return `/preview/${demoId}`;
-}
-
-function buildEmbedUrl(demoId) {
-    return `/embed/${demoId}`;
-}
-
-function buildDownloadUrl(demoId) {
-    return `/download/${demoId}`;
-}
-
-function buildThumbnailUrl(demoId) {
-    return `/thumbnail/${demoId}`;
-}
-
-function escapeHtml(value) {
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-function getDemoIdFromSession(session) {
-    if (typeof session?.demoId === 'string' && session.demoId) {
-        return session.demoId;
-    }
-
-    if (typeof session?.outputDir === 'string' && session.outputDir) {
-        return session.outputDir.split('/').pop();
-    }
-
-    if (typeof session?.prototypeUrl === 'string' && session.prototypeUrl) {
-        const segments = session.prototypeUrl.split('/').filter(Boolean);
-        if (segments[0] === 'demos' && segments[1]) {
-            return segments[1];
-        }
-        if (segments[0] === 'preview' && segments[1]) {
-            return segments[1];
-        }
-    }
-
-    return null;
-}
-
-function normalizeHistorySession(session) {
-    const demoId = getDemoIdFromSession(session);
-
-    return {
-        sessionId: session.sessionId || uuidv4(),
-        timestamp: session.timestamp || new Date().toISOString(),
-        originalFilename: session.originalFilename || '',
-        customPrompt: session.customPrompt || '',
-        demoId,
-        previewUrl: demoId ? buildPreviewUrl(demoId) : null,
-        embedUrl: demoId ? buildEmbedUrl(demoId) : null,
-        downloadUrl: demoId ? buildDownloadUrl(demoId) : null,
-        thumbnailUrl: demoId ? buildThumbnailUrl(demoId) : null,
-        tokens: {
-            input: Number(session.tokens?.input || 0),
-            output: Number(session.tokens?.output || 0)
-        },
-        cost: Number(session.cost || 0),
-        costs: {
-            inputCost: session.costs?.inputCost || '0.000000',
-            outputCost: session.costs?.outputCost || '0.000000',
-            totalCost: session.costs?.totalCost || '0.000000'
-        },
-        duration: Number(session.duration || 0),
-        model: session.model || CONFIG.MODEL,
-        files: Array.isArray(session.files) ? session.files : ['index.html'],
-        success: session.success !== false
-    };
 }
 
 async function loadHistory() {
     try {
-        if (!existsSync(CONFIG.HISTORY_FILE)) {
-            return { sessions: [] };
+        if (existsSync(CONFIG.HISTORY_FILE)) {
+            const data = await fs.readFile(CONFIG.HISTORY_FILE, 'utf-8');
+            return JSON.parse(data);
         }
-
-        const raw = await fs.readFile(CONFIG.HISTORY_FILE, 'utf-8');
-        const parsed = JSON.parse(raw);
-        const sessions = Array.isArray(parsed.sessions)
-            ? parsed.sessions.map(normalizeHistorySession)
-            : [];
-
-        return { sessions };
     } catch (error) {
         log(LOG_PREFIX.ERROR, 'Failed to load history', { error: error.message });
-        return { sessions: [] };
     }
+    return { sessions: [] };
 }
 
 async function saveHistory(history) {
-    await fs.writeFile(CONFIG.HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8');
-    log(LOG_PREFIX.HISTORY, 'History saved', { totalSessions: history.sessions.length });
+    try {
+        await fs.writeFile(
+            CONFIG.HISTORY_FILE,
+            JSON.stringify(history, null, 2),
+            'utf-8'
+        );
+        log(LOG_PREFIX.HISTORY, 'History saved successfully');
+    } catch (error) {
+        log(LOG_PREFIX.ERROR, 'Failed to save history', { error: error.message });
+    }
 }
 
 async function addToHistory(session) {
     const history = await loadHistory();
-    history.sessions.unshift(normalizeHistorySession(session));
-    history.sessions = history.sessions.slice(0, 100);
+    history.sessions.unshift(session);
+
+    // Keep only last 100 sessions
+    if (history.sessions.length > 100) {
+        history.sessions = history.sessions.slice(0, 100);
+    }
+
     await saveHistory(history);
+}
+
+// ============================================================================
+// IMAGE PROCESSING
+// ============================================================================
+
+async function compressImage(inputPath, outputPath) {
+    log(LOG_PREFIX.INFO, 'Compressing image', { inputPath, outputPath });
+
+    try {
+        const metadata = await sharp(inputPath).metadata();
+        log(LOG_PREFIX.INFO, 'Original image metadata', {
+            width: metadata.width,
+            height: metadata.height,
+            format: metadata.format
+        });
+
+        await sharp(inputPath)
+            .resize(CONFIG.MAX_IMAGE_SIZE, CONFIG.MAX_IMAGE_SIZE, {
+                fit: 'inside',
+                withoutEnlargement: true
+            })
+            .jpeg({ quality: 90 })
+            .toFile(outputPath);
+
+        const compressedMetadata = await sharp(outputPath).metadata();
+        log(LOG_PREFIX.SUCCESS, 'Image compressed successfully', {
+            width: compressedMetadata.width,
+            height: compressedMetadata.height,
+            size: compressedMetadata.size
+        });
+
+        return outputPath;
+    } catch (error) {
+        log(LOG_PREFIX.ERROR, 'Image compression failed', { error: error.message });
+        throw error;
+    }
+}
+
+async function createThumbnail(imagePath, thumbnailPath) {
+    try {
+        await sharp(imagePath)
+            .resize(200, 200, { fit: 'cover' })
+            .jpeg({ quality: 80 })
+            .toFile(thumbnailPath);
+
+        log(LOG_PREFIX.INFO, 'Thumbnail created', { thumbnailPath });
+        return thumbnailPath;
+    } catch (error) {
+        log(LOG_PREFIX.ERROR, 'Thumbnail creation failed', { error: error.message });
+        return null;
+    }
+}
+
+async function imageToBase64(imagePath) {
+    const imageBuffer = await fs.readFile(imagePath);
+    return imageBuffer.toString('base64');
+}
+
+// ============================================================================
+// MULTER CONFIGURATION
+// ============================================================================
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, CONFIG.UPLOADS_DIR);
+    },
+    filename: (req, file, cb) => {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        cb(null, `whiteboard-${timestamp}.jpg`);
+    }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 50 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'));
+        }
+    }
+});
+
+// ============================================================================
+// COST CALCULATION
+// ============================================================================
+
+function calculateCost(inputTokens, outputTokens) {
+    const inputCost = (inputTokens / 1000000) * CONFIG.COST_PER_MILLION_INPUT;
+    const outputCost = (outputTokens / 1000000) * CONFIG.COST_PER_MILLION_OUTPUT;
+    const totalCost = inputCost + outputCost;
+
+    return {
+        inputCost: inputCost.toFixed(6),
+        outputCost: outputCost.toFixed(6),
+        totalCost: totalCost.toFixed(6)
+    };
+}
+
+// ============================================================================
+// CLAUDE AGENT SDK - AUTONOMOUS PROTOTYPE BUILDER
+// ============================================================================
+
+async function buildPrototypeWithClaudeAgent(imagePath, customPrompt, sessionId, apiKey) {
+    if (!apiKey) {
+        throw new Error('Add an Anthropic API key to run the prototype builder.');
+    }
+
+    const anthropic = new Anthropic({ apiKey });
+    log(LOG_PREFIX.CLAUDE, 'Starting Claude Agent SDK session', { sessionId });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const outputDir = join(CONFIG.OUTPUT_DIR, `prototype-${timestamp}`);
+
+    try {
+        // Create output directory
+        await fs.mkdir(outputDir, { recursive: true });
+        log(LOG_PREFIX.BUILD, 'Created output directory', { outputDir });
+
+        // Compress and encode image
+        const compressedPath = join(
+            CONFIG.UPLOADS_DIR,
+            'compressed-' + imagePath.split('/').pop()
+        );
+        await compressImage(imagePath, compressedPath);
+
+        const imageBase64 = await imageToBase64(compressedPath);
+        log(LOG_PREFIX.CLAUDE, 'Image processed and encoded', {
+            originalPath: imagePath,
+            compressedPath,
+            base64Length: imageBase64.length
+        });
+
+        // Build the system prompt
+        const systemPrompt = `You are an expert web developer and prototype builder. Your job is to create a FULLY FUNCTIONAL, production-ready prototype from whiteboard sketches.
+
+TASK: Analyze the whiteboard sketch and build a complete, working HTML prototype that matches this exact design specification.
+
+MANDATORY DESIGN SPECIFICATIONS (unless user explicitly overrides):
+- Background: White (#ffffff)
+- Primary accent color: #4facfe (bright blue)
+- Secondary accent color: #5eb3d6 (softer blue)
+- Text colors: #030203 (headings), #666 (body text), #999 (hints)
+- Buttons: Black (#030203) with white text, 50px border-radius, hover effects with lift
+- Inputs/textareas: 1px solid rgba(79, 172, 254, 0.2) borders, 15px border-radius
+- Cards/sections: White background, subtle blue borders rgba(79, 172, 254, 0.15), soft shadows
+- Font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif
+- Animations: Smooth transitions with cubic-bezier(0.23, 1, 0.320, 1)
+
+FUNCTIONALITY REQUIREMENTS:
+1. Make it FULLY FUNCTIONAL - all buttons, forms, and interactive elements must work
+2. If the sketch shows a form, implement proper form validation and submission handling
+3. If the sketch shows navigation, implement working navigation
+4. If the sketch shows data/content, include realistic sample data
+5. If the sketch shows animations or transitions, implement them smoothly
+6. All user interactions should provide clear feedback (hover states, click effects, etc.)
+7. Handle edge cases (empty states, loading states, error states)
+8. Make it mobile-responsive with proper touch targets
+
+TECHNICAL REQUIREMENTS:
+1. Single self-contained HTML file with embedded CSS and JavaScript
+2. Use semantic HTML5 elements
+3. Modern JavaScript (ES6+) with proper event handling
+4. Clean, organized code structure
+5. Include meaningful placeholder content
+6. Add smooth animations and transitions
+7. Implement proper accessibility (ARIA labels where needed)
+
+WHITEBOARD INTERPRETATION:
+1. Study the sketch carefully - understand the concept, layout, and intended functionality
+2. Identify all UI components, interactions, and user flows
+3. Infer reasonable functionality even if not explicitly shown
+4. Create a polished, professional version of the concept
+
+${customPrompt ? `\n=== USER-SPECIFIED OVERRIDES ===\n${customPrompt}\n(These instructions override the default design specifications above)\n` : ''}
+
+CRITICAL OUTPUT REQUIREMENTS:
+- Return ONLY the complete HTML code
+- No explanations, no markdown code blocks, no wrapper text
+- Start directly with <!DOCTYPE html>
+- Make it production-ready and fully functional
+- The user should be able to actually use this prototype, not just view a static mockup`;
+
+        log(LOG_PREFIX.CLAUDE, 'Sending request to Claude Opus 4.5', {
+            model: CONFIG.MODEL,
+            maxTokens: CONFIG.MAX_TOKENS,
+            customPrompt: customPrompt || 'None'
+        });
+
+        // Call Claude API
+        const startTime = Date.now();
+        const message = await anthropic.messages.create({
+            model: CONFIG.MODEL,
+            max_tokens: CONFIG.MAX_TOKENS,
+            messages: [{
+                role: 'user',
+                content: [
+                    {
+                        type: 'image',
+                        source: {
+                            type: 'base64',
+                            media_type: 'image/jpeg',
+                            data: imageBase64
+                        }
+                    },
+                    {
+                        type: 'text',
+                        text: systemPrompt
+                    }
+                ]
+            }]
+        });
+
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+
+        log(LOG_PREFIX.SUCCESS, 'Claude responded successfully', {
+            duration: `${duration}s`,
+            inputTokens: message.usage.input_tokens,
+            outputTokens: message.usage.output_tokens,
+            stopReason: message.stop_reason
+        });
+
+        // Extract and clean HTML
+        let htmlContent = message.content[0].text;
+
+        // Remove any markdown code blocks
+        htmlContent = htmlContent.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+
+        // Ensure DOCTYPE
+        if (!htmlContent.startsWith('<!DOCTYPE') && !htmlContent.startsWith('<html')) {
+            htmlContent = '<!DOCTYPE html>\n' + htmlContent;
+        }
+
+        // Save the prototype
+        const indexPath = join(outputDir, 'index.html');
+        await fs.writeFile(indexPath, htmlContent, 'utf-8');
+
+        log(LOG_PREFIX.SUCCESS, 'Prototype file created', {
+            path: indexPath,
+            size: htmlContent.length
+        });
+
+        // Calculate costs
+        const costs = calculateCost(message.usage.input_tokens, message.usage.output_tokens);
+
+        log(LOG_PREFIX.INFO, 'Session cost calculated', costs);
+
+        // Create thumbnail
+        const thumbnailPath = join(outputDir, 'thumbnail.jpg');
+        await createThumbnail(compressedPath, thumbnailPath);
+
+        return {
+            success: true,
+            sessionId,
+            outputDir,
+            prototypeUrl: `/demos/${outputDir.split('/').pop()}/index.html`,
+            thumbnailUrl: `/demos/${outputDir.split('/').pop()}/thumbnail.jpg`,
+            tokens: {
+                input: message.usage.input_tokens,
+                output: message.usage.output_tokens
+            },
+            cost: parseFloat(costs.totalCost),
+            costs,
+            duration: parseFloat(duration),
+            files: ['index.html'],
+            timestamp: new Date().toISOString(),
+            model: CONFIG.MODEL
+        };
+
+    } catch (error) {
+        log(LOG_PREFIX.ERROR, 'Claude Agent SDK build failed', {
+            sessionId,
+            error: error.message,
+            stack: error.stack
+        });
+        throw error;
+    }
+}
+
+function getAnthropicApiKey(req) {
+    const headerValue = req.get('x-anthropic-api-key');
+
+    if (typeof headerValue === 'string' && headerValue.trim()) {
+        return headerValue.trim();
+    }
+
+    if (typeof process.env.ANTHROPIC_API_KEY === 'string' && process.env.ANTHROPIC_API_KEY.trim()) {
+        return process.env.ANTHROPIC_API_KEY.trim();
+    }
+
+    return '';
 }
 
 async function safeUnlink(filePath) {
@@ -196,390 +421,16 @@ async function safeUnlink(filePath) {
     }
 }
 
-async function compressImage(inputPath, outputPath) {
-    await sharp(inputPath)
-        .resize(CONFIG.MAX_IMAGE_SIZE, CONFIG.MAX_IMAGE_SIZE, {
-            fit: 'inside',
-            withoutEnlargement: true
-        })
-        .jpeg({ quality: 78 })
-        .toFile(outputPath);
+// ============================================================================
+// EXPRESS MIDDLEWARE
+// ============================================================================
 
-    return outputPath;
-}
+app.use(express.json());
+app.use(express.static('public'));
+app.use('/uploads', express.static(CONFIG.UPLOADS_DIR));
+app.use('/demos', express.static(CONFIG.OUTPUT_DIR));
 
-async function createThumbnail(imagePath, thumbnailPath) {
-    const thumbnailDir = dirname(thumbnailPath);
-    await fs.mkdir(thumbnailDir, { recursive: true });
-
-    try {
-        await sharp(imagePath)
-            .resize(1200, 900, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 84 })
-            .toFile(thumbnailPath);
-    } catch (error) {
-        if (error.code !== 'ENOENT') {
-            throw error;
-        }
-
-        await fs.mkdir(thumbnailDir, { recursive: true });
-        await sharp(imagePath)
-            .resize(1200, 900, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 84 })
-            .toFile(thumbnailPath);
-    }
-
-    return thumbnailPath;
-}
-
-async function writeFileWithDirectoryRetry(filePath, content, encoding = 'utf-8') {
-    const parentDir = dirname(filePath);
-    await fs.mkdir(parentDir, { recursive: true });
-
-    try {
-        await fs.writeFile(filePath, content, encoding);
-    } catch (error) {
-        if (error.code !== 'ENOENT') {
-            throw error;
-        }
-
-        log(LOG_PREFIX.INFO, 'Recreating missing output directory before retry', {
-            filePath,
-            parentDir
-        });
-        await fs.mkdir(parentDir, { recursive: true });
-        await fs.writeFile(filePath, content, encoding);
-    }
-}
-
-async function imageToBase64(imagePath) {
-    const buffer = await fs.readFile(imagePath);
-    return buffer.toString('base64');
-}
-
-function calculateCost(inputTokens, outputTokens) {
-    const inputCost = (inputTokens / 1000000) * CONFIG.COST_PER_MILLION_INPUT;
-    const outputCost = (outputTokens / 1000000) * CONFIG.COST_PER_MILLION_OUTPUT;
-    const totalCost = inputCost + outputCost;
-
-    return {
-        inputCost: inputCost.toFixed(6),
-        outputCost: outputCost.toFixed(6),
-        totalCost: totalCost.toFixed(6)
-    };
-}
-
-function assertDemoId(demoId) {
-    if (!/^[A-Za-z0-9-]+$/.test(demoId)) {
-        throw new Error('Invalid demo id');
-    }
-    return demoId;
-}
-
-function getDemoPaths(demoId) {
-    const safeDemoId = assertDemoId(demoId);
-    const demoDir = join(CONFIG.OUTPUT_DIR, safeDemoId);
-
-    return {
-        demoId: safeDemoId,
-        demoDir,
-        indexPath: join(demoDir, 'index.html'),
-        thumbnailPath: join(demoDir, 'thumbnail.jpg')
-    };
-}
-
-function isCanceledError(error, signal) {
-    return Boolean(
-        signal?.aborted ||
-        error?.name === 'AbortError' ||
-        error?.name === 'APIUserAbortError' ||
-        error?.message === 'Generation canceled by user'
-    );
-}
-
-function createSystemPrompt(customPrompt) {
-    return `You are an expert product designer and frontend engineer. Turn any whiteboard sketch into a clickable product demo.
-
-GOAL:
-- Produce a single self-contained HTML file with embedded CSS and JavaScript.
-- The output should feel like a realistic product demo, not a static mock.
-- Match the whiteboard's intent while filling in missing details with sensible UX.
-- Work from rough, low-fidelity, or partially annotated whiteboard sketches and still produce a coherent clickable demo.
-
-DEFAULT UX DESIGN BEHAVIOR:
-- Always improve the sketch like a strong UX designer would.
-- Do not mirror the roughness of the whiteboard literally.
-- Upgrade the information hierarchy, spacing, typography, layout, states, and calls to action.
-- Make the result feel polished, intentional, and demo-ready even when the sketch is sparse.
-- Preserve the product idea from the sketch, but improve the user experience by default unless the user explicitly asks for something raw or lo-fi.
-
-REQUIRED BEHAVIOR:
-1. All visible controls must work.
-2. Include realistic sample content and meaningful empty/loading/error states.
-3. Make the layout responsive on desktop and mobile.
-4. Use semantic HTML and accessible labels.
-5. Keep everything inside one HTML file.
-
-VISUAL DIRECTION:
-- Clean product-demo quality.
-- White or light background unless the whiteboard strongly suggests otherwise.
-- Use a consistent accent system and clear hierarchy.
-- Choose stronger visual structure than the sketch provides when needed.
-- Use polished component patterns, clear grouping, and better visual rhythm.
-- Add motion only when it improves comprehension.
-- Do not invent decorative filler that is not explained by the sketch or product concept.
-- Do not add generic gray image placeholders, avatar ovals, empty hero art, random blobs, or fake mock content.
-- Every prominent visible shape should either represent a real part of the product, a meaningful control, or a clear explanation of the sketch.
-
-IMPLEMENTATION RULES:
-- Return only raw HTML.
-- No markdown fences or explanations.
-- Start with <!DOCTYPE html>.
-- Do not rely on external assets, libraries, or network calls.
-- Keep the implementation compact and fast to generate.
-- Prefer one polished primary flow over many secondary screens.
-- Avoid unnecessary complexity, oversized datasets, or long blocks of copy.
-- Use concise HTML, CSS, and JavaScript while still delivering a strong demo.
-
-${customPrompt ? `USER OVERRIDES:\n${customPrompt}` : ''}`.trim();
-}
-
-function extractResponseText(response) {
-    if (!Array.isArray(response?.content)) {
-        return '';
-    }
-
-    const textParts = [];
-
-    for (const content of response.content) {
-        if (content?.type === 'text' && typeof content.text === 'string' && content.text.trim()) {
-            textParts.push(content.text.trim());
-        }
-    }
-
-    return textParts.join('\n').trim();
-}
-
-function extractRefusal(response) {
-    if (!Array.isArray(response?.content)) {
-        return '';
-    }
-
-    for (const content of response.content) {
-        if (content?.type === 'text' && typeof content.text === 'string' && /cannot|can't|unable|won't|refuse/i.test(content.text)) {
-            return content.text.trim();
-        }
-    }
-
-    return '';
-}
-
-function buildResponseDiagnostics(response) {
-    return {
-        id: response?.id || null,
-        type: response?.type || null,
-        model: response?.model || null,
-        stopReason: response?.stop_reason || null,
-        contentTypes: Array.isArray(response?.content)
-            ? response.content.map((content) => content?.type || null)
-            : []
-    };
-}
-
-function getUsageMetrics(response) {
-    return {
-        input: Number(response?.usage?.input_tokens || 0) + Number(response?.usage?.cache_creation_input_tokens || 0) + Number(response?.usage?.cache_read_input_tokens || 0),
-        output: Number(response?.usage?.output_tokens || 0)
-    };
-}
-
-function getModelCandidates() {
-    return [...new Set([CONFIG.MODEL, CONFIG.FALLBACK_MODEL].filter(Boolean))];
-}
-
-function getAnthropicApiKey(req) {
-    const headerValue = req.get('x-anthropic-api-key');
-
-    if (typeof headerValue === 'string' && headerValue.trim()) {
-        return headerValue.trim();
-    }
-
-    if (typeof process.env.ANTHROPIC_API_KEY === 'string' && process.env.ANTHROPIC_API_KEY.trim()) {
-        return process.env.ANTHROPIC_API_KEY.trim();
-    }
-
-    return '';
-}
-
-async function createAnthropicMessage({ apiKey, model, systemPrompt, imageBase64, signal }) {
-    if (!apiKey) {
-        throw new Error('Add an Anthropic API key to run the demo.');
-    }
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'anthropic-version': '2023-06-01',
-            'x-api-key': apiKey
-        },
-        body: JSON.stringify({
-            model,
-            max_tokens: CONFIG.MAX_TOKENS,
-            system: systemPrompt,
-            messages: [{
-                role: 'user',
-                content: [
-                    {
-                        type: 'text',
-                        text: 'Analyze this whiteboard sketch and return a single self-contained HTML file for a clickable product demo.'
-                    },
-                    {
-                        type: 'image',
-                        source: {
-                            type: 'base64',
-                            media_type: 'image/jpeg',
-                            data: imageBase64
-                        }
-                    }
-                ]
-            }]
-        }),
-        signal
-    });
-
-    const payload = await response.json().catch(async () => {
-        const fallbackText = await response.text();
-        return {
-            error: {
-                message: fallbackText || `Anthropic request failed with status ${response.status}`
-            }
-        };
-    });
-
-    if (!response.ok) {
-        throw new Error(payload?.error?.message || `Anthropic request failed with status ${response.status}`);
-    }
-
-    return payload;
-}
-
-async function buildPrototypeWithAnthropic({ apiKey, imagePath, customPrompt, sessionId, signal }) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const demoId = `prototype-${timestamp}`;
-    const outputDir = join(CONFIG.OUTPUT_DIR, demoId);
-    const compressedPath = join(CONFIG.UPLOADS_DIR, `compressed-${basename(imagePath)}`);
-
-    await fs.mkdir(outputDir, { recursive: true });
-    await compressImage(imagePath, compressedPath);
-
-    const imageBase64 = await imageToBase64(compressedPath);
-    const systemPrompt = createSystemPrompt(customPrompt);
-    const startedAt = Date.now();
-    const modelCandidates = getModelCandidates();
-    let response = null;
-    let htmlContent = '';
-
-    for (const model of modelCandidates) {
-        log(LOG_PREFIX.MODEL, 'Starting generation', {
-            sessionId,
-            demoId,
-            model
-        });
-
-        response = await createAnthropicMessage({
-            apiKey,
-            model,
-            systemPrompt,
-            imageBase64,
-            signal
-        });
-
-        htmlContent = extractResponseText(response);
-
-        if (htmlContent) {
-            break;
-        }
-
-        const refusal = extractRefusal(response);
-        const diagnostics = buildResponseDiagnostics(response);
-        log(LOG_PREFIX.MODEL, 'Anthropic response missing HTML output', diagnostics);
-
-        if (refusal) {
-            throw new Error(`Model refused the request: ${refusal}`);
-        }
-
-        if (response?.stop_reason === 'max_tokens' && model === modelCandidates[modelCandidates.length - 1]) {
-            throw new Error('Model response incomplete: max_tokens');
-        }
-    }
-
-    if (!response || !htmlContent) {
-        throw new Error('Model did not return HTML output');
-    }
-
-    htmlContent = htmlContent.replace(/```html\s*/gi, '').replace(/```\s*/g, '').trim();
-
-    if (!htmlContent.startsWith('<!DOCTYPE') && !htmlContent.startsWith('<html')) {
-        htmlContent = `<!DOCTYPE html>\n${htmlContent}`;
-    }
-
-    await fs.mkdir(outputDir, { recursive: true });
-
-    const indexPath = join(outputDir, 'index.html');
-    await writeFileWithDirectoryRetry(indexPath, htmlContent, 'utf-8');
-
-    const thumbnailPath = join(outputDir, 'thumbnail.jpg');
-    await createThumbnail(compressedPath, thumbnailPath);
-
-    const duration = Number(((Date.now() - startedAt) / 1000).toFixed(2));
-    const usage = getUsageMetrics(response);
-    const costs = calculateCost(usage.input, usage.output);
-
-    return {
-        success: true,
-        sessionId,
-        demoId,
-        previewUrl: buildPreviewUrl(demoId),
-        embedUrl: buildEmbedUrl(demoId),
-        downloadUrl: buildDownloadUrl(demoId),
-        thumbnailUrl: buildThumbnailUrl(demoId),
-        tokens: usage,
-        cost: Number(costs.totalCost),
-        costs,
-        duration,
-        files: ['index.html'],
-        timestamp: new Date().toISOString(),
-        model: response?.model || CONFIG.MODEL,
-        compressedPath
-    };
-}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, CONFIG.UPLOADS_DIR);
-    },
-    filename: (req, file, cb) => {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        cb(null, `whiteboard-${timestamp}.jpg`);
-    }
-});
-
-const upload = multer({
-    storage,
-    limits: {
-        fileSize: CONFIG.MAX_UPLOAD_SIZE
-    },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-            return;
-        }
-
-        cb(new Error('Only image files are allowed'));
-    }
-});
-
+// Request logging middleware
 app.use((req, res, next) => {
     log(LOG_PREFIX.SERVER, `${req.method} ${req.url}`, {
         ip: req.ip,
@@ -588,72 +439,64 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use((req, res, next) => {
-    res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    next();
-});
+// ============================================================================
+// ROUTES
+// ============================================================================
 
-app.use(express.json());
-app.use(express.static(join(__dirname, 'public')));
-app.use('/assets', express.static(CONFIG.ASSETS_DIR));
-
+// Main page
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'public', 'index.html'));
 });
 
+// Upload and process whiteboard
 app.post('/upload', upload.single('whiteboard'), async (req, res) => {
-    const sessionId = typeof req.body?.sessionId === 'string' && req.body.sessionId
-        ? req.body.sessionId
-        : uuidv4();
-    const imagePath = req.file ? join(CONFIG.UPLOADS_DIR, req.file.filename) : null;
-    const compressedPath = req.file ? join(CONFIG.UPLOADS_DIR, `compressed-${req.file.filename}`) : null;
-    const controller = new AbortController();
+    const sessionId = uuidv4();
+    let imagePath = '';
+    let compressedPath = '';
+
+    log(LOG_PREFIX.UPLOAD, 'New upload session started', {
+        sessionId,
+        filename: req.file?.filename
+    });
 
     try {
         if (!req.file) {
+            log(LOG_PREFIX.ERROR, 'No file uploaded', { sessionId });
             return res.status(400).json({
                 success: false,
-                error: 'Upload a whiteboard photo to continue.'
+                error: 'No file uploaded'
             });
         }
 
-        if (inFlightJobs.has(sessionId)) {
-            return res.status(409).json({
-                success: false,
-                sessionId,
-                error: 'A build is already running for this session.'
-            });
-        }
-
-        const customPrompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
+        const customPrompt = req.body.prompt || '';
         const apiKey = getAnthropicApiKey(req);
+        imagePath = join(CONFIG.UPLOADS_DIR, req.file.filename);
+        compressedPath = join(CONFIG.UPLOADS_DIR, 'compressed-' + req.file.filename);
 
-        inFlightJobs.set(sessionId, {
-            controller,
-            startedAt: new Date().toISOString()
-        });
-
-        log(LOG_PREFIX.UPLOAD, 'Accepted upload', {
+        log(LOG_PREFIX.INFO, 'Processing upload', {
             sessionId,
             filename: req.file.filename,
-            size: req.file.size
+            size: req.file.size,
+            customPrompt: customPrompt || 'None'
         });
 
-        const result = await buildPrototypeWithAnthropic({
-            apiKey,
+        // Build prototype using Claude Agent SDK
+        const result = await buildPrototypeWithClaudeAgent(
             imagePath,
             customPrompt,
             sessionId,
-            signal: controller.signal
-        });
+            apiKey
+        );
 
-        await addToHistory({
+        // Add to history
+        const historyEntry = {
             sessionId,
             timestamp: result.timestamp,
             originalFilename: req.file.filename,
             customPrompt,
-            demoId: result.demoId,
+            outputDir: result.outputDir,
+            prototypeUrl: result.prototypeUrl,
+            thumbnailUrl: result.thumbnailUrl,
             tokens: result.tokens,
             cost: result.cost,
             costs: result.costs,
@@ -661,43 +504,31 @@ app.post('/upload', upload.single('whiteboard'), async (req, res) => {
             model: result.model,
             files: result.files,
             success: true
-        });
+        };
 
-        log(LOG_PREFIX.SUCCESS, 'Generation completed', {
+        await addToHistory(historyEntry);
+
+        log(LOG_PREFIX.SUCCESS, 'Upload processed successfully', {
             sessionId,
-            demoId: result.demoId,
-            duration: result.duration,
-            totalCost: result.cost
+            cost: `$${result.cost}`,
+            duration: `${result.duration}s`
         });
 
         res.json({
             success: true,
             sessionId,
-            message: 'Prototype generated successfully.',
-            demoId: result.demoId,
-            previewUrl: result.previewUrl,
-            embedUrl: result.embedUrl,
-            downloadUrl: result.downloadUrl,
+            message: 'Prototype generated successfully!',
+            demoUrl: result.prototypeUrl,
             thumbnailUrl: result.thumbnailUrl,
+            outputDir: result.outputDir,
             tokens: result.tokens,
             cost: result.cost,
             costs: result.costs,
             duration: result.duration,
-            files: result.files,
-            model: result.model
+            files: result.files
         });
-    } catch (error) {
-        if (isCanceledError(error, controller.signal)) {
-            log(LOG_PREFIX.JOB, 'Generation canceled', { sessionId });
-            res.status(499).json({
-                success: false,
-                canceled: true,
-                sessionId,
-                error: 'Generation canceled.'
-            });
-            return;
-        }
 
+    } catch (error) {
         log(LOG_PREFIX.ERROR, 'Upload processing failed', {
             sessionId,
             error: error.message,
@@ -707,291 +538,100 @@ app.post('/upload', upload.single('whiteboard'), async (req, res) => {
         res.status(500).json({
             success: false,
             sessionId,
-            error: error.message || 'Failed to generate prototype.'
+            error: error.message || 'Failed to generate prototype'
         });
     } finally {
-        inFlightJobs.delete(sessionId);
         await safeUnlink(imagePath);
         await safeUnlink(compressedPath);
     }
 });
 
-app.post('/jobs/:sessionId/cancel', (req, res) => {
-    const { sessionId } = req.params;
-    const job = inFlightJobs.get(sessionId);
-
-    if (!job) {
-        res.status(404).json({
-            success: false,
-            sessionId,
-            error: 'No active job found for this session.'
-        });
-        return;
-    }
-
-    job.controller.abort(new Error('Generation canceled by user'));
-    inFlightJobs.delete(sessionId);
-
-    log(LOG_PREFIX.JOB, 'Cancel requested', { sessionId });
-
-    res.json({
-        success: true,
-        sessionId,
-        message: 'Generation canceled.'
-    });
-});
-
+// Get history
 app.get('/history', async (req, res) => {
     try {
         const history = await loadHistory();
+
+        log(LOG_PREFIX.HISTORY, 'History retrieved', {
+            totalSessions: history.sessions.length
+        });
+
         res.json({
             success: true,
             sessions: history.sessions,
             total: history.sessions.length
         });
     } catch (error) {
-        log(LOG_PREFIX.ERROR, 'Failed to retrieve history', { error: error.message });
+        log(LOG_PREFIX.ERROR, 'Failed to retrieve history', {
+            error: error.message
+        });
+
         res.status(500).json({
             success: false,
-            error: 'Failed to retrieve history.'
+            error: 'Failed to retrieve history'
         });
     }
 });
 
-app.get('/thumbnail/:demoId', async (req, res) => {
-    try {
-        const { thumbnailPath } = getDemoPaths(req.params.demoId);
-        await fs.access(thumbnailPath);
-        res.sendFile(thumbnailPath);
-    } catch (error) {
-        res.status(404).json({
-            success: false,
-            error: 'Thumbnail not found.'
-        });
-    }
-});
-
-app.get('/download/:demoId', async (req, res) => {
-    try {
-        const { demoId, indexPath } = getDemoPaths(req.params.demoId);
-        await fs.access(indexPath);
-        res.download(indexPath, `${demoId}.html`);
-    } catch (error) {
-        res.status(404).json({
-            success: false,
-            error: 'Prototype not found.'
-        });
-    }
-});
-
-app.get('/embed/:demoId', async (req, res) => {
-    try {
-        const { indexPath } = getDemoPaths(req.params.demoId);
-        const prototypeHtml = await fs.readFile(indexPath, 'utf-8');
-        res.type('html').send(prototypeHtml);
-    } catch (error) {
-        res.status(404).sendFile(join(__dirname, 'public', 'not-found.html'));
-    }
-});
-
-app.get('/preview/:demoId', async (req, res) => {
-    try {
-        const { demoId, indexPath } = getDemoPaths(req.params.demoId);
-        const prototypeHtml = await fs.readFile(indexPath, 'utf-8');
-
-        res.type('html').send(`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${escapeHtml(demoId)} Preview</title>
-    <style>
-        :root {
-            color-scheme: light;
-            font-family: "Avenir Next", "Segoe UI", sans-serif;
-            --bg: #f2f6fb;
-            --panel: rgba(255, 255, 255, 0.84);
-            --text: #10213a;
-            --muted: #5e728f;
-            --border: rgba(38, 96, 196, 0.12);
-            --accent: #2563eb;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            background:
-                radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 34%),
-                radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 28%),
-                var(--bg);
-            color: var(--text);
-        }
-
-        .shell {
-            width: min(1280px, calc(100vw - 32px));
-            margin: 20px auto;
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            background: var(--panel);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
-            overflow: hidden;
-        }
-
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            align-items: center;
-            padding: 18px 22px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .title {
-            font-size: 14px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-
-        .actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .button {
-            border: none;
-            border-radius: 999px;
-            padding: 12px 18px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 14px;
-            transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-        }
-
-        .button:hover {
-            transform: translateY(-1px);
-        }
-
-        .button.primary {
-            background: var(--accent);
-            color: white;
-            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.24);
-        }
-
-        .button.secondary {
-            background: rgba(37, 99, 235, 0.08);
-            color: var(--text);
-        }
-
-        .frame {
-            padding: 18px;
-            height: calc(100vh - 108px);
-            min-height: 680px;
-        }
-
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            border-radius: 18px;
-            background: white;
-        }
-
-        @media (max-width: 720px) {
-            .shell {
-                width: calc(100vw - 20px);
-                margin: 10px auto;
-            }
-
-            .topbar {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .frame {
-                height: calc(100vh - 164px);
-                min-height: 560px;
-                padding: 12px;
-            }
-
-            .actions {
-                width: 100%;
-            }
-
-            .button {
-                flex: 1;
-                text-align: center;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="shell">
-        <div class="topbar">
-            <div>
-                <div class="title">Whiteboard to Prototype</div>
-                <strong>${escapeHtml(demoId)}</strong>
-            </div>
-            <div class="actions">
-                <a class="button secondary" href="/">Build another</a>
-                <a class="button primary" href="${buildDownloadUrl(demoId)}">Download HTML</a>
-            </div>
-        </div>
-        <div class="frame">
-            <iframe id="prototypeFrame" sandbox="allow-downloads allow-forms allow-modals allow-popups allow-scripts" title="${escapeHtml(demoId)} prototype preview"></iframe>
-        </div>
-    </div>
-    <script>
-        document.getElementById('prototypeFrame').srcdoc = ${JSON.stringify(prototypeHtml)};
-    </script>
-</body>
-</html>`);
-    } catch (error) {
-        res.status(404).sendFile(join(__dirname, 'public', 'not-found.html'));
-    }
-});
-
+// Health check
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        activeJobs: inFlightJobs.size,
         config: {
             model: CONFIG.MODEL,
             maxTokens: CONFIG.MAX_TOKENS,
             maxImageSize: CONFIG.MAX_IMAGE_SIZE,
-            maxUploadSize: CONFIG.MAX_UPLOAD_SIZE,
             defaultAnthropicKeyConfigured: Boolean(process.env.ANTHROPIC_API_KEY?.trim())
         }
     });
 });
 
-app.use((error, req, res, next) => {
-    if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
-        res.status(400).json({
-            success: false,
-            error: `Upload images up to ${Math.round(CONFIG.MAX_UPLOAD_SIZE / 1024 / 1024)}MB.`
-        });
-        return;
-    }
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
 
-    if (error?.message === 'Only image files are allowed') {
-        res.status(400).json({
-            success: false,
-            error: error.message
-        });
-        return;
-    }
+async function startServer() {
+    try {
+        // Ensure directories exist
+        await ensureDirectories();
 
-    next(error);
-});
+        // Start server
+        app.listen(PORT, () => {
+            console.log('\n' + '='.repeat(70));
+            console.log('🚀 WHITEBOARD TO PROTOTYPE - Claude Agent SDK');
+            console.log('='.repeat(70));
+            console.log(`📱 Mobile:   http://localhost:${PORT}`);
+            console.log(`💻 Desktop:  http://localhost:${PORT}`);
+            console.log(`📊 History:  http://localhost:${PORT}/history`);
+            console.log(`🏥 Health:   http://localhost:${PORT}/health`);
+            console.log('='.repeat(70));
+            console.log(`🤖 Model:    ${CONFIG.MODEL}`);
+            console.log(`📁 Uploads:  ${CONFIG.UPLOADS_DIR}`);
+            console.log(`📦 Output:   ${CONFIG.OUTPUT_DIR}`);
+            console.log(`🔑 Default key: ${process.env.ANTHROPIC_API_KEY ? 'configured' : 'not configured'}`);
+            console.log('='.repeat(70) + '\n');
+
+            log(LOG_PREFIX.SERVER, 'Server started successfully', {
+                port: PORT,
+                nodeVersion: process.version,
+                platform: process.platform,
+                defaultAnthropicKeyConfigured: Boolean(process.env.ANTHROPIC_API_KEY?.trim())
+            });
+        });
+
+    } catch (error) {
+        log(LOG_PREFIX.ERROR, 'Server startup failed', {
+            error: error.message,
+            stack: error.stack
+        });
+        process.exit(1);
+    }
+}
+
+// ============================================================================
+// ERROR HANDLERS
+// ============================================================================
 
 process.on('uncaughtException', (error) => {
     log(LOG_PREFIX.ERROR, 'Uncaught exception', {
@@ -1001,35 +641,15 @@ process.on('uncaughtException', (error) => {
     process.exit(1);
 });
 
-process.on('unhandledRejection', (reason) => {
-    log(LOG_PREFIX.ERROR, 'Unhandled rejection', { reason });
+process.on('unhandledRejection', (reason, promise) => {
+    log(LOG_PREFIX.ERROR, 'Unhandled rejection', {
+        reason,
+        promise
+    });
 });
 
-async function startServer() {
-    await ensureDirectories();
+// ============================================================================
+// START
+// ============================================================================
 
-    app.listen(PORT, () => {
-        console.log('');
-        console.log('WHITEBOARD TO PROTOTYPE');
-        console.log(`App:     http://localhost:${PORT}`);
-        console.log(`History: http://localhost:${PORT}/history.html`);
-        console.log(`Health:  http://localhost:${PORT}/health`);
-        console.log('');
-
-        log(LOG_PREFIX.SERVER, 'Server started', {
-            port: PORT,
-            nodeVersion: process.version,
-            platform: process.platform,
-            dataRoot: CONFIG.DATA_ROOT,
-            defaultAnthropicKeyConfigured: Boolean(process.env.ANTHROPIC_API_KEY?.trim())
-        });
-    });
-}
-
-startServer().catch((error) => {
-    log(LOG_PREFIX.ERROR, 'Server startup failed', {
-        error: error.message,
-        stack: error.stack
-    });
-    process.exit(1);
-});
+startServer();
