@@ -522,37 +522,160 @@
         min-height: 0;
       }
 
+      .hero-utility {
+        margin-top: 0;
+      }
+
       h1 {
         max-width: 10ch;
       }
     }
 
+    @media (max-width: 900px) {
+      body {
+        padding: 16px;
+      }
+
+      .shell {
+        width: min(720px, 100%);
+      }
+
+      .layout {
+        gap: 16px;
+      }
+
+      .hero-card,
+      .builder {
+        padding: 24px;
+      }
+
+      .hero-grid,
+      .hero-utility {
+        gap: 18px;
+      }
+
+      h1 {
+        max-width: 9ch;
+        font-size: clamp(38px, 8vw, 54px);
+      }
+
+      .hero-copy p {
+        max-width: 42ch;
+        font-size: 15px;
+        line-height: 1.62;
+      }
+
+      .hero-actions {
+        gap: 10px;
+      }
+
+      .sample-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sample-card {
+        padding: 14px;
+      }
+
+      .sample-image-button img {
+        height: 192px;
+      }
+    }
+
     @media (max-width: 760px) {
       body {
-        padding: 14px;
+        padding: 12px;
       }
 
       .topbar,
       .hero-card,
       .builder {
-        padding-left: 20px;
-        padding-right: 20px;
+        padding-left: 18px;
+        padding-right: 18px;
       }
 
       .topbar {
         flex-direction: column;
         align-items: flex-start;
-        border-radius: 28px;
+        gap: 8px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        border-radius: 24px;
       }
 
       .hero-card,
       .builder {
-        padding-top: 24px;
-        padding-bottom: 24px;
+        padding-top: 20px;
+        padding-bottom: 20px;
       }
 
-      .sample-grid {
-        grid-template-columns: 1fr;
+      .hero-grid,
+      .hero-utility {
+        gap: 16px;
+      }
+
+      .hero-utility-card,
+      .builder-block {
+        padding: 16px;
+        border-radius: 18px;
+      }
+
+      .builder {
+        gap: 16px;
+      }
+
+      .builder-head {
+        gap: 8px;
+      }
+
+      .builder-head h2 {
+        font-size: 24px;
+      }
+
+      .builder-head p,
+      .step-copy span,
+      .sample-copy p {
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .step-head {
+        grid-template-columns: 34px minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .step-number {
+        width: 34px;
+        height: 34px;
+        font-size: 13px;
+        border-radius: 11px;
+      }
+
+      .step-copy strong {
+        font-size: 15px;
+      }
+
+      .sample-card {
+        gap: 10px;
+        padding: 12px;
+        border-radius: 18px;
+      }
+
+      .sample-image-button,
+      .sample-image-button img {
+        border-radius: 14px;
+      }
+
+      .sample-image-button img {
+        height: 176px;
+      }
+
+      .sample-copy {
+        min-height: 0;
+      }
+
+      .sample-copy strong {
+        font-size: 16px;
       }
 
       .sample-modal-head {
@@ -562,15 +685,34 @@
 
       .sample-actions {
         flex-direction: column;
+        gap: 8px;
       }
 
       .sample-actions .button {
         width: 100%;
+        min-height: 46px;
+      }
+
+      .hero-actions .button,
+      .hero-utility-card .button {
+        width: 100%;
+      }
+
+      .hero-note {
+        font-size: 12px;
+        line-height: 1.5;
       }
 
       h1 {
-        font-size: 52px;
-        max-width: 9ch;
+        max-width: 8.5ch;
+        font-size: clamp(34px, 11vw, 46px);
+        line-height: 0.98;
+      }
+
+      .site-footer {
+        margin-top: 18px;
+        padding-top: 4px;
+        font-size: 13px;
       }
     }
   </style>
