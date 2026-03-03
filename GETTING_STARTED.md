@@ -2,6 +2,8 @@
 
 Step-by-step instructions to get your Whiteboard to Prototype system running.
 
+> Note: the live backend now uses the Anthropic Messages API and expects `ANTHROPIC_API_KEY`. Some lower sections in this document may still contain older provider wording.
+
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
@@ -30,11 +32,11 @@ Don't have Node.js? Download from https://nodejs.org
 
 ### Anthropic API Key
 
-1. Go to https://console.anthropic.com
+1. Go to https://console.anthropic.com/settings/keys
 2. Sign up or log in
-3. Navigate to API Keys section
+3. Navigate to API Keys
 4. Create a new API key
-5. Copy it (starts with `sk-ant-api03-...`)
+5. Copy it into your `.env` file
 
 ---
 
@@ -57,7 +59,6 @@ This installs:
 - `express` - Web server
 - `multer` - File uploads
 - `sharp` - Image processing
-- `@anthropic-ai/sdk` - Claude API client
 - `dotenv` - Environment configuration
 - `uuid` - Session ID generation
 
@@ -96,6 +97,7 @@ open .env  # macOS default editor
 Add your Anthropic API key:
 ```
 ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE
+ANTHROPIC_MODEL=claude-sonnet-4-5
 PORT=3000
 ```
 

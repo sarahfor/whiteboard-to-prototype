@@ -1,6 +1,8 @@
 # Architecture Summary
 
-Complete technical overview of the Whiteboard to Prototype system using Claude Agent SDK.
+Complete technical overview of the Whiteboard to Prototype system.
+
+> Note: the implementation now uses the Anthropic Messages API. This document has not been fully rewritten yet and may still contain some older provider wording.
 
 ## System Architecture
 
@@ -23,15 +25,15 @@ Complete technical overview of the Whiteboard to Prototype system using Claude A
 │  • Handles file uploads (Multer)                                │
 │  • Compresses images (Sharp)                                    │
 │  • Creates thumbnails                                           │
-│  • Orchestrates Claude Agent SDK                                │
+│  • Calls the Anthropic Messages API                             │
 │  • Manages session history                                      │
 │  • Tracks costs and metrics                                     │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     CLAUDE AGENT SDK                             │
-│  • Claude Opus 4.5 (Vision + Code Generation)                  │
+│                   ANTHROPIC MESSAGES API                         │
+│  • Claude Sonnet (Vision + Code Generation)                    │
 │  • Analyzes whiteboard sketch                                   │
 │  • Understands concept and requirements                         │
 │  • Autonomously generates HTML/CSS/JS                           │

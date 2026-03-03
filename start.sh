@@ -32,7 +32,7 @@ if [ ! -f .env ]; then
         echo "   ✅ .env file created"
         echo ""
         echo "   ⚠️  IMPORTANT: Edit .env and add your ANTHROPIC_API_KEY"
-        echo "   Get your key from: https://console.anthropic.com"
+        echo "   Get your key from: https://console.anthropic.com/settings/keys"
         echo ""
         read -p "Press Enter once you've added your API key to .env..."
     else
@@ -50,7 +50,8 @@ if [ ! -d node_modules ]; then
 fi
 
 # Check if API key is set
-if ! grep -q "ANTHROPIC_API_KEY=sk-ant-" .env; then
+API_KEY_VALUE=$(grep -E '^ANTHROPIC_API_KEY=' .env | head -n 1 | cut -d'=' -f2-)
+if [ -z "$API_KEY_VALUE" ] || [ "$API_KEY_VALUE" = "your_anthropic_api_key_here" ]; then
     echo ""
     echo "⚠️  WARNING: ANTHROPIC_API_KEY not set in .env file"
     echo "   The server will fail to start without a valid API key"

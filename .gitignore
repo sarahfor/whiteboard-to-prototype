@@ -6,3 +6,4 @@ __output__/*
 !__output__/.gitkeep
 .DS_Store
 *.log
+.env.txt

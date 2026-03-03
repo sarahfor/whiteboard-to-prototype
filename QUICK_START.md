@@ -5,7 +5,7 @@ Get up and running in under 2 minutes.
 ## Prerequisites
 
 - Node.js 18+ installed
-- Anthropic API key ([get one here](https://console.anthropic.com))
+- Anthropic API key ([get one here](https://console.anthropic.com/settings/keys))
 
 ## Quick Start
 
@@ -34,7 +34,7 @@ npm install
 # 2. Create .env file
 cp .env.example .env
 
-# 3. Edit .env and add your API key
+# 3. Edit .env and add your Anthropic API key
 nano .env  # or use any text editor
 
 # 4. Start server
@@ -84,9 +84,9 @@ npm run dev
 
 ## Cost Estimates
 
-Claude Opus 4.5 pricing:
-- Input: $15 per million tokens
-- Output: $75 per million tokens
+Anthropic Claude Sonnet pricing:
+- Input: $3.00 per million tokens
+- Output: $15.00 per million tokens
 
 Typical costs per prototype:
 - Simple sketch: $0.10 - $0.25
