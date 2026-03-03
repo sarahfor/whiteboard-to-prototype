@@ -8,15 +8,18 @@
     :root {
       color-scheme: light;
       --bg: #ffffff;
+      --panel: rgba(255, 255, 255, 0.72);
       --ink: #0f172a;
       --muted: #5b6b84;
-      --line: rgba(37, 99, 235, 0.12);
-      --line-strong: rgba(37, 99, 235, 0.18);
+      --line: rgba(15, 23, 42, 0.06);
+      --glass-border: rgba(197, 215, 243, 0.78);
       --surface: rgba(255, 255, 255, 0.94);
-      --surface-soft: #f7faff;
+      --surface-soft: #f5f9ff;
+      --surface-border: rgba(37, 99, 235, 0.12);
       --accent: #2563eb;
       --accent-2: #0ea5e9;
-      --shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+      --shadow: 0 28px 72px rgba(15, 23, 42, 0.1);
+      --shadow-soft: 0 18px 42px rgba(15, 23, 42, 0.08);
       --radius-xl: 28px;
       --radius-lg: 22px;
       --radius-md: 18px;
@@ -70,10 +73,25 @@
       align-items: center;
       padding: 18px 22px;
       border-radius: 999px;
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.86);
-      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
-      backdrop-filter: blur(16px);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.74)),
+        rgba(255, 255, 255, 0.82);
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(18px) saturate(140%);
+    }
+
+    .topbar::after,
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 1px 1px auto 1px;
+      height: 44%;
+      border-radius: inherit;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0));
+      pointer-events: none;
     }
 
     .brand {
@@ -101,14 +119,16 @@
       min-height: 54px;
       padding: 14px 22px;
       border-radius: 999px;
-      border: 1px solid var(--line);
-      background: #f5f8ff;
+      border: none;
+      background: #f4f8ff;
       color: var(--ink);
       text-decoration: none;
       font-size: 14px;
       font-weight: 800;
       cursor: pointer;
-      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+      position: relative;
+      overflow: hidden;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
     }
 
     .button:hover {
@@ -118,22 +138,26 @@
     .button.primary {
       background: linear-gradient(135deg, rgba(37, 99, 235, 0.92) 0%, rgba(14, 165, 233, 0.86) 100%);
       color: white;
-      border-color: transparent;
-      box-shadow: 0 16px 30px rgba(37, 99, 235, 0.2);
+      box-shadow: 0 18px 36px rgba(37, 99, 235, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.34);
     }
 
     .button.secondary {
-      background: rgba(255, 255, 255, 0.92);
+      background: #f4f8ff;
+      color: var(--ink);
+      border: 1px solid rgba(37, 99, 235, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
     }
 
     .button.subtle {
-      background: #f7faff;
+      background: #f4f8ff;
       color: var(--ink);
+      border: 1px solid rgba(37, 99, 235, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
     }
 
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 0.92fr) minmax(400px, 1.08fr);
+      grid-template-columns: minmax(320px, 0.82fr) minmax(520px, 1.18fr);
       gap: 18px;
       margin-top: 18px;
       align-items: start;
@@ -141,144 +165,180 @@
 
     .panel {
       border-radius: var(--radius-xl);
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--glass-border);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78)),
+        var(--panel);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(18px) saturate(140%);
     }
 
-    .hero {
-      padding: 36px;
+    .hero-card {
+      padding: 32px;
+      display: grid;
+      gap: 20px;
+      min-height: 620px;
+      align-content: start;
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78)),
+        var(--panel);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px) saturate(140%);
+    }
+
+    .hero-grid {
+      position: relative;
+      display: grid;
+      gap: 22px;
+      width: 100%;
+      align-content: start;
+    }
+
+    .hero-copy {
       display: grid;
       gap: 18px;
-      min-height: 680px;
       align-content: start;
     }
 
     h1 {
       margin: 0;
-      max-width: 8.5ch;
-      font-size: clamp(50px, 6.8vw, 84px);
-      line-height: 0.94;
-      letter-spacing: -0.055em;
+      max-width: 8ch;
+      font-size: clamp(40px, 5vw, 62px);
+      line-height: 1.01;
+      letter-spacing: -0.04em;
       color: #4f5668;
     }
 
-    .hero-copy {
-      max-width: 27ch;
-      font-size: 16px;
-      line-height: 1.66;
+    .hero-copy p {
+      margin: 0;
+      max-width: 560px;
       color: var(--muted);
+      font-size: 16px;
+      line-height: 1.68;
     }
 
     .hero-actions {
+      display: flex;
+      align-items: start;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero-utility {
       display: grid;
-      gap: 16px;
-      width: min(390px, 100%);
+      gap: 14px;
+      align-content: start;
       margin-top: auto;
     }
 
-    .hero-status {
+    .hero-utility-card {
       display: grid;
-      gap: 10px;
-      padding: 20px 24px;
-      border-radius: 24px;
-      border: 1px solid var(--line);
-      background: var(--surface-soft);
+      gap: 8px;
+      padding: 18px 20px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+      border: 1px solid rgba(37, 99, 235, 0.08);
     }
 
-    .hero-status strong {
-      font-size: 12px;
-      letter-spacing: 0.1em;
+    .hero-utility-card strong {
+      font-size: 13px;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
     }
 
-    .hero-status p {
+    .hero-note {
       margin: 0;
-      font-size: 15px;
-      line-height: 1.7;
+      font-size: 13px;
+      line-height: 1.55;
       color: var(--muted);
     }
 
-    .hero-status .button {
+    .hero-note-strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .hero-utility-card .button {
       width: fit-content;
     }
 
-    .hero-status em {
-      font-style: normal;
-      font-weight: 800;
-      color: var(--ink);
-    }
-
     .builder {
-      padding: 28px;
+      padding: 26px;
       display: grid;
       gap: 20px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: none;
     }
 
     .builder-head {
       display: grid;
-      gap: 10px;
+      gap: 6px;
     }
 
     .builder-head h2 {
       margin: 0;
-      font-size: clamp(30px, 3.6vw, 44px);
-      line-height: 1;
-      letter-spacing: -0.045em;
+      font-size: 28px;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
     }
 
     .builder-head p {
       margin: 0;
       color: var(--muted);
-      font-size: 16px;
-      line-height: 1.55;
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 700px;
     }
 
     .builder-block {
       display: grid;
-      gap: 20px;
-      padding: 24px;
-      border-radius: 26px;
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, #fcfdff 0%, #f7faff 100%);
+      gap: 16px;
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(37, 99, 235, 0.08);
+      background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
     }
 
     .step-head {
       display: grid;
-      grid-template-columns: 56px minmax(0, 1fr);
-      gap: 16px;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 12px;
       align-items: start;
     }
 
     .step-number {
-      width: 56px;
-      height: 56px;
+      width: 38px;
+      height: 38px;
       display: grid;
       place-items: center;
-      border-radius: 18px;
-      background: #dfe8ff;
+      border-radius: 12px;
+      background: rgba(37, 99, 235, 0.1);
       color: var(--accent);
-      font-size: 18px;
+      font-size: 14px;
       font-weight: 800;
     }
 
     .step-copy {
       display: grid;
-      gap: 8px;
+      gap: 4px;
     }
 
     .step-copy strong {
-      font-size: 22px;
-      letter-spacing: -0.03em;
+      font-size: 16px;
+      letter-spacing: -0.02em;
     }
 
     .step-copy span {
       color: var(--muted);
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.6;
-      max-width: 34ch;
     }
 
     .sample-grid {
@@ -290,20 +350,19 @@
     .sample-card {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-      min-height: 100%;
+      gap: 12px;
       padding: 16px;
-      border-radius: 28px;
+      border-radius: 22px;
       border: 1px solid rgba(37, 99, 235, 0.1);
-      background: rgba(255, 255, 255, 0.98);
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+      background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
       transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
     }
 
     .sample-card:hover {
       transform: translateY(-2px);
       border-color: rgba(37, 99, 235, 0.18);
-      box-shadow: 0 16px 32px rgba(15, 23, 42, 0.07);
+      box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
     }
 
     .sample-image-button {
@@ -312,7 +371,7 @@
       padding: 0;
       border: 0;
       background: transparent;
-      border-radius: 22px;
+      border-radius: 16px;
       overflow: hidden;
       cursor: zoom-in;
     }
@@ -320,10 +379,10 @@
     .sample-image-button img {
       display: block;
       width: 100%;
-      aspect-ratio: 1 / 1;
+      height: 168px;
       object-fit: cover;
       border: 1px solid rgba(15, 23, 42, 0.06);
-      border-radius: 22px;
+      border-radius: 16px;
       transition: transform 180ms ease;
     }
 
@@ -333,23 +392,15 @@
 
     .sample-copy {
       display: grid;
-      gap: 10px;
+      gap: 6px;
       align-content: start;
-      min-height: 138px;
-    }
-
-    .sample-kicker {
-      font-size: 11px;
-      letter-spacing: 0.11em;
-      text-transform: uppercase;
-      color: #8ea0bf;
-      font-weight: 700;
+      min-height: 124px;
     }
 
     .sample-copy strong {
-      font-size: 18px;
-      letter-spacing: -0.03em;
-      line-height: 1.18;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
     }
 
     .sample-copy p {
@@ -360,18 +411,23 @@
     }
 
     .sample-actions {
-      display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      display: flex;
       gap: 10px;
       margin-top: auto;
+      flex-wrap: wrap;
     }
 
     .sample-actions .button {
-      width: 100%;
-      min-width: 0;
-      min-height: 48px;
-      padding-left: 16px;
-      padding-right: 16px;
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .sample-actions .build-demo-button {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.92) 0%, rgba(14, 165, 233, 0.86) 100%);
+      color: var(--ink);
+      border-color: transparent;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
     }
 
     .site-footer {
@@ -462,7 +518,7 @@
         grid-template-columns: 1fr;
       }
 
-      .hero {
+      .hero-card {
         min-height: 0;
       }
 
@@ -477,7 +533,7 @@
       }
 
       .topbar,
-      .hero,
+      .hero-card,
       .builder {
         padding-left: 20px;
         padding-right: 20px;
@@ -489,7 +545,7 @@
         border-radius: 28px;
       }
 
-      .hero,
+      .hero-card,
       .builder {
         padding-top: 24px;
         padding-bottom: 24px;
@@ -505,7 +561,7 @@
       }
 
       .sample-actions {
-        grid-template-columns: 1fr;
+        flex-direction: column;
       }
 
       .sample-actions .button {
@@ -531,15 +587,23 @@
     </header>
 
     <main class="layout">
-      <section class="panel hero">
-        <div class="eyebrow">Sketch to demo in one flow</div>
-        <h1>Turn any whiteboard sketch into a product demo.</h1>
-        <p class="hero-copy">Start with a built-in sketch for a quick walkthrough. Preview the original whiteboard first, then open the finished sample prototype in your browser.</p>
-        <div class="hero-actions">
-          <a class="button primary" href="#builder">Build a sample prototype</a>
-          <div class="hero-status">
-            <strong>GitHub</strong>
-            <a class="button subtle" href="https://github.com/sarahfor/whiteboard-to-prototype" target="_blank" rel="noopener noreferrer">View repo on GitHub</a>
+      <section class="hero-card">
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <div class="eyebrow">Sketch to demo in one flow</div>
+            <h1>Turn any whiteboard sketch into a product demo.</h1>
+            <p>Start with a built-in sketch for a quick walkthrough. Preview the original whiteboard first, then open the finished sample prototype in your browser.</p>
+          </div>
+
+          <div class="hero-utility">
+            <div class="hero-actions">
+              <a class="button primary" href="#builder">Build a sample prototype</a>
+            </div>
+            <div class="hero-utility-card">
+              <strong>GitHub</strong>
+              <p class="hero-note"><span class="hero-note-strong">Open the repo:</span> browse the source, setup, and deployment files for Whiteboard to Prototype.</p>
+              <a class="button secondary" href="https://github.com/sarahfor/whiteboard-to-prototype" target="_blank" rel="noopener noreferrer">View repo on GitHub</a>
+            </div>
           </div>
         </div>
       </section>
@@ -565,13 +629,12 @@
                 <img src="assets/algebra-whiteboard.jpg" alt="Algebra practice whiteboard sample">
               </button>
               <div class="sample-copy">
-                <span class="sample-kicker">Structured learning flow</span>
                 <strong>Algebra practice dashboard</strong>
                 <p>Useful for forms, progress widgets, and structured learning flows.</p>
               </div>
               <div class="sample-actions">
-                <button class="button subtle sample-preview-button" type="button" data-preview-src="assets/algebra-whiteboard.jpg" data-preview-title="Algebra practice dashboard" data-preview-description="Whiteboard sketch for a structured learning flow with exercises, progress tracking, and focused utility UI.">Preview image</button>
-                <a class="button primary" href="https://sarahfor.github.io/algebra-learning-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
+                <button class="button secondary sample-preview-button" type="button" data-preview-src="assets/algebra-whiteboard.jpg" data-preview-title="Algebra practice dashboard" data-preview-description="Whiteboard sketch for a structured learning flow with exercises, progress tracking, and focused utility UI.">Preview image</button>
+                <a class="button secondary build-demo-button" href="https://sarahfor.github.io/algebra-learning-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
               </div>
             </article>
 
@@ -580,13 +643,12 @@
                 <img src="assets/box-search-whiteboard.jpg" alt="Box search algorithm whiteboard sample">
               </button>
               <div class="sample-copy">
-                <span class="sample-kicker">Process walkthrough</span>
                 <strong>Box search algorithm explainer</strong>
                 <p>Useful for turning a rough process diagram into a clearer educational or step-by-step interactive demo.</p>
               </div>
               <div class="sample-actions">
-                <button class="button subtle sample-preview-button" type="button" data-preview-src="assets/box-search-whiteboard.jpg" data-preview-title="Box search algorithm explainer" data-preview-description="Whiteboard sketch for a visual pseudocode flow that can become a polished learning demo or algorithm walkthrough.">Preview image</button>
-                <a class="button primary" href="https://sarahfor.github.io/box-search-algorithm-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
+                <button class="button secondary sample-preview-button" type="button" data-preview-src="assets/box-search-whiteboard.jpg" data-preview-title="Box search algorithm explainer" data-preview-description="Whiteboard sketch for a visual pseudocode flow that can become a polished learning demo or algorithm walkthrough.">Preview image</button>
+                <a class="button secondary build-demo-button" href="https://sarahfor.github.io/box-search-algorithm-demo/" target="_blank" rel="noopener noreferrer">Build this prototype</a>
               </div>
             </article>
           </div>
@@ -596,8 +658,6 @@
 
     <footer class="site-footer">
       Built by Sarah Forrest and James Kirk. Human-centered AI, product thinking, and a real human in the loop.
-      <br>
-      <a href="https://github.com/sarahfor/whiteboard-to-prototype" target="_blank" rel="noopener noreferrer">View the Whiteboard to Prototype repo</a>
     </footer>
   </div>
 
