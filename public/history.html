@@ -7,20 +7,18 @@
     <style>
         :root {
             color-scheme: light;
-            --bg: #f8fbff;
+            --bg: #ffffff;
             --ink: #0f172a;
             --muted: #5b6b84;
-            --line: rgba(15, 23, 42, 0.06);
-            --panel: rgba(255, 255, 255, 0.72);
-            --panel-strong: rgba(255, 255, 255, 0.86);
-            --glass-border: rgba(197, 215, 243, 0.78);
+            --line: rgba(37, 99, 235, 0.12);
             --surface: rgba(255, 255, 255, 0.94);
-            --surface-soft: #f5f9ff;
-            --surface-border: rgba(37, 99, 235, 0.1);
+            --surface-soft: #f7faff;
             --accent: #2563eb;
             --accent-2: #0ea5e9;
-            --shadow: 0 28px 72px rgba(15, 23, 42, 0.1);
-            --shadow-soft: 0 18px 42px rgba(15, 23, 42, 0.08);
+            --shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+            --radius-xl: 28px;
+            --radius-lg: 22px;
+            --radius-md: 18px;
             font-family: "Avenir Next", "Segoe UI", sans-serif;
         }
 
@@ -28,51 +26,42 @@
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
             margin: 0;
-            min-height: 100vh;
+            min-height: 100%;
+            background: var(--bg);
+            color: var(--ink);
+        }
+
+        body {
             position: relative;
             padding: 24px;
-            background: #ffffff;
-            color: var(--ink);
             overflow-x: clip;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        button {
+            font: inherit;
+        }
+
+        #networkCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.94;
         }
 
         .shell {
             position: relative;
             z-index: 1;
-            width: min(1320px, 100%);
+            width: min(1400px, 100%);
             margin: 0 auto;
-        }
-
-        .topbar {
-            border-radius: 28px;
-            position: relative;
-            overflow: hidden;
-            background:
-                linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78)),
-                var(--panel);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(18px) saturate(140%);
-        }
-
-        .topbar::after {
-            content: "";
-            position: absolute;
-            inset: 1px 1px auto 1px;
-            height: 44%;
-            border-radius: inherit;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0));
-            pointer-events: none;
-        }
-
-        .panel,
-        .empty-state {
-            border-radius: 28px;
-            background: var(--surface);
-            border: 1px solid var(--surface-border);
-            box-shadow: var(--shadow-soft);
         }
 
         .topbar {
@@ -80,29 +69,29 @@
             justify-content: space-between;
             align-items: center;
             gap: 18px;
-            padding: 20px 22px;
+            padding: 18px 22px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.86);
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+            backdrop-filter: blur(16px);
+        }
+
+        .brand {
+            display: grid;
+            gap: 4px;
         }
 
         .eyebrow {
             font-size: 12px;
-            text-transform: uppercase;
             letter-spacing: 0.12em;
-            color: var(--muted);
+            text-transform: uppercase;
+            color: #91a0b9;
         }
 
-        h1 {
-            margin: 8px 0 0;
-            font-size: clamp(34px, 5vw, 54px);
-            line-height: 1.01;
-            letter-spacing: -0.04em;
-        }
-
-        .topbar p {
-            margin: 10px 0 0;
-            color: var(--muted);
-            max-width: 640px;
-            line-height: 1.68;
-            font-size: 15px;
+        .brand-title {
+            font-size: 18px;
+            font-weight: 800;
         }
 
         .top-actions {
@@ -112,14 +101,21 @@
         }
 
         .button {
-            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 52px;
+            padding: 14px 22px;
             border-radius: 999px;
-            padding: 14px 20px;
+            border: 1px solid var(--line);
+            background: #f5f8ff;
+            color: var(--ink);
             text-decoration: none;
             font-size: 14px;
             font-weight: 800;
             cursor: pointer;
-            transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
         }
 
         .button:hover {
@@ -129,35 +125,68 @@
         .button.primary {
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.92) 0%, rgba(14, 165, 233, 0.86) 100%);
             color: white;
-            box-shadow: 0 18px 36px rgba(37, 99, 235, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+            border-color: transparent;
+            box-shadow: 0 16px 30px rgba(37, 99, 235, 0.2);
         }
 
         .button.secondary {
-            background: #f4f8ff;
-            color: var(--ink);
-            border: 1px solid rgba(37, 99, 235, 0.12);
-            backdrop-filter: none;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .panel,
+        .empty-state {
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .hero {
+            margin-top: 22px;
+            padding: 36px 40px;
+            display: grid;
+            gap: 14px;
+        }
+
+        h1 {
+            margin: 0;
+            max-width: 10ch;
+            font-size: clamp(46px, 7vw, 78px);
+            line-height: 0.95;
+            letter-spacing: -0.05em;
+            color: #4f5668;
+        }
+
+        .hero p {
+            margin: 0;
+            max-width: 48ch;
+            color: var(--muted);
+            font-size: 18px;
+            line-height: 1.7;
         }
 
         .overview {
             margin-top: 22px;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
         }
 
-        .panel {
+        .metric {
             padding: 24px;
         }
 
         .metric strong {
             display: block;
-            font-size: 30px;
-            margin-bottom: 8px;
+            font-size: 34px;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            margin-bottom: 10px;
         }
 
         .metric span {
+            display: block;
             color: var(--muted);
             line-height: 1.6;
             font-size: 13px;
@@ -165,26 +194,29 @@
 
         .content {
             margin-top: 22px;
+            padding: 28px;
+            display: grid;
+            gap: 22px;
         }
 
         .content-head {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: start;
             gap: 16px;
-            margin-bottom: 18px;
         }
 
         .content-head h2 {
             margin: 0;
-            font-size: 28px;
-            letter-spacing: -0.03em;
+            font-size: 32px;
+            letter-spacing: -0.035em;
         }
 
         .content-head p {
-            margin: 6px 0 0;
+            margin: 8px 0 0;
             color: var(--muted);
             line-height: 1.6;
+            max-width: 56ch;
         }
 
         .loading,
@@ -198,6 +230,7 @@
             display: block;
             font-size: 24px;
             margin-bottom: 10px;
+            letter-spacing: -0.03em;
         }
 
         .loading p,
@@ -215,8 +248,13 @@
         }
 
         .session-card {
+            padding: 20px;
             display: grid;
-            overflow: hidden;
+            gap: 18px;
+            border-radius: 26px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
         }
 
         .session-thumb {
@@ -225,13 +263,12 @@
             object-fit: cover;
             background: rgba(37, 99, 235, 0.08);
             border-radius: 18px;
-            border: 1px solid var(--line);
+            border: 1px solid rgba(15, 23, 42, 0.06);
         }
 
         .session-body {
             display: grid;
             gap: 14px;
-            margin-top: 18px;
         }
 
         .session-meta {
@@ -242,7 +279,7 @@
         .session-id {
             font-size: 12px;
             color: var(--muted);
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
         }
 
@@ -252,12 +289,12 @@
         }
 
         .session-prompt {
-            padding: 14px;
-            border-radius: 16px;
-            background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
-            line-height: 1.6;
+            padding: 16px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+            line-height: 1.65;
             color: var(--ink);
-            min-height: 88px;
+            min-height: 96px;
             font-size: 14px;
             border: 1px solid rgba(37, 99, 235, 0.08);
         }
@@ -269,7 +306,7 @@
 
         .session-stats {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
         }
 
@@ -284,6 +321,7 @@
             display: block;
             font-size: 17px;
             margin-bottom: 4px;
+            letter-spacing: -0.02em;
         }
 
         .stat-chip span {
@@ -304,35 +342,41 @@
             text-align: center;
         }
 
-        .session-actions .button.secondary {
-            background: #f5f8ff;
-            border: 1px solid rgba(37, 99, 235, 0.12);
-            box-shadow: none;
-            backdrop-filter: none;
-        }
-
         @media (max-width: 960px) {
             .overview {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
-        @media (max-width: 720px) {
+        @media (max-width: 760px) {
             body {
                 padding: 14px;
             }
 
             .topbar,
-            .panel,
+            .hero,
+            .content,
+            .metric,
             .empty-state {
-                padding: 18px;
-                border-radius: 24px;
+                padding-left: 20px;
+                padding-right: 20px;
             }
 
             .topbar,
-            .content-head {
+            .content-head,
+            .top-actions {
                 flex-direction: column;
                 align-items: flex-start;
+            }
+
+            .hero {
+                padding-top: 24px;
+                padding-bottom: 24px;
+            }
+
+            h1 {
+                font-size: 54px;
+                max-width: 9ch;
             }
 
             .overview {
@@ -342,22 +386,33 @@
             .session-stats {
                 grid-template-columns: 1fr;
             }
+
+            .session-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
+    <canvas id="networkCanvas" aria-hidden="true"></canvas>
+
     <div class="shell">
         <header class="topbar">
-            <div>
-                <div class="eyebrow">Recent demo sessions</div>
-                <h1>Prototype history</h1>
-                <p>Review recent generations, reopen the sandboxed preview, and download the generated HTML for handoff or offline review.</p>
+            <div class="brand">
+                <span class="eyebrow">AI Product Demo Builder</span>
+                <span class="brand-title">Whiteboard to Prototype</span>
             </div>
             <div class="top-actions">
                 <button class="button secondary" id="refreshButton" type="button">Refresh</button>
                 <a class="button primary" href="/">Back to builder</a>
             </div>
         </header>
+
+        <section class="panel hero">
+            <div class="eyebrow">Recent demo sessions</div>
+            <h1>Prototype history</h1>
+            <p>Review recent generations, open the generated HTML in a new tab, and download the finished file when you need to share or hand off the prototype.</p>
+        </section>
 
         <section class="overview">
             <div class="panel metric">
@@ -378,11 +433,11 @@
             </div>
         </section>
 
-        <section class="content">
+        <section class="panel content">
             <div class="content-head">
                 <div>
                     <h2>Session library</h2>
-                    <p>Only completed builds are stored here. Temporary upload files are removed after generation.</p>
+                    <p>Only completed builds are stored here. Temporary upload files are removed after generation, but the finished demos stay available for preview and download.</p>
                 </div>
             </div>
 
@@ -405,6 +460,119 @@
         const emptyState = document.getElementById('emptyState');
         const sessionsGrid = document.getElementById('sessionsGrid');
         const refreshButton = document.getElementById('refreshButton');
+        const networkCanvas = document.getElementById('networkCanvas');
+
+        function initNetworkBackground() {
+            const context = networkCanvas.getContext('2d');
+            if (!context) {
+                return;
+            }
+
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const particles = [];
+            const particleCount = prefersReducedMotion
+                ? 36
+                : Math.min(96, Math.max(54, Math.floor(window.innerWidth / 18)));
+
+            function resizeCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                networkCanvas.width = Math.floor(window.innerWidth * dpr);
+                networkCanvas.height = Math.floor(window.innerHeight * dpr);
+                context.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * window.innerWidth;
+                    this.y = Math.random() * window.innerHeight;
+                    this.vx = (Math.random() - 0.5) * 0.28;
+                    this.vy = (Math.random() - 0.5) * 0.28;
+                    this.size = Math.random() * 2.4 + 1.1;
+                }
+
+                update() {
+                    if (prefersReducedMotion) {
+                        return;
+                    }
+
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.x < -20 || this.x > window.innerWidth + 20) {
+                        this.vx *= -1;
+                    }
+
+                    if (this.y < -20 || this.y > window.innerHeight + 20) {
+                        this.vy *= -1;
+                    }
+                }
+
+                draw() {
+                    context.beginPath();
+                    context.fillStyle = 'rgba(79, 172, 254, 0.42)';
+                    context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    context.fill();
+                }
+            }
+
+            function seedParticles() {
+                particles.length = 0;
+                for (let index = 0; index < particleCount; index += 1) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function drawConnections() {
+                for (let i = 0; i < particles.length; i += 1) {
+                    const first = particles[i];
+
+                    for (let j = i + 1; j < particles.length; j += 1) {
+                        const second = particles[j];
+                        const dx = first.x - second.x;
+                        const dy = first.y - second.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance > 150) {
+                            continue;
+                        }
+
+                        context.strokeStyle = `rgba(79, 172, 254, ${0.22 - distance / 850})`;
+                        context.lineWidth = 1;
+                        context.beginPath();
+                        context.moveTo(first.x, first.y);
+                        context.lineTo(second.x, second.y);
+                        context.stroke();
+                    }
+                }
+            }
+
+            function render() {
+                context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+                particles.forEach((particle) => {
+                    particle.update();
+                    particle.draw();
+                });
+
+                drawConnections();
+
+                if (!prefersReducedMotion) {
+                    window.requestAnimationFrame(render);
+                }
+            }
+
+            resizeCanvas();
+            seedParticles();
+            render();
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                seedParticles();
+                if (prefersReducedMotion) {
+                    render();
+                }
+            });
+        }
 
         function formatCurrency(value) {
             return `$${Number(value).toFixed(4)}`;
@@ -452,7 +620,7 @@
 
             sessions.forEach((session) => {
                 const card = document.createElement('article');
-                card.className = 'panel session-card';
+                card.className = 'session-card';
 
                 const thumb = document.createElement('img');
                 thumb.className = 'session-thumb';
@@ -561,6 +729,7 @@
 
         refreshButton.addEventListener('click', loadHistory);
 
+        initNetworkBackground();
         loadHistory();
         setInterval(loadHistory, 60000);
     </script>

@@ -12,7 +12,7 @@ GitHub Pages can only host the static shell. It cannot run the live build flow.
 
 Use a Render web service with a persistent disk.
 
-The repo includes [render.yaml](/Users/sarahforrest/whiteboard-to-prototype/render.yaml), which configures:
+The repo includes [render.yaml](render.yaml), which configures:
 
 - a Node web service
 - `npm install` and `npm start`
