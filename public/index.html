@@ -341,6 +341,12 @@
             color: var(--muted);
         }
 
+        .hero-copy {
+            display: grid;
+            gap: 18px;
+            align-content: start;
+        }
+
         .hero-note {
             font-size: 13px;
             color: var(--muted);
@@ -570,10 +576,10 @@
 
         .sample-actions .sample-button {
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.92) 0%, rgba(14, 165, 233, 0.86) 100%);
-            color: white;
+            color: var(--ink);
             border-color: transparent;
             box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
-            text-shadow: 0 1px 0 rgba(15, 23, 42, 0.12);
+            text-shadow: none;
         }
 
         .sample-actions .sample-button:hover {
@@ -1919,7 +1925,7 @@
             previewEmpty.style.display = 'none';
             previewReady.classList.add('active');
             previewFrame.src = result.embedUrl || result.previewUrl;
-            openPreviewLink.href = result.previewUrl;
+            openPreviewLink.href = result.embedUrl || result.previewUrl;
             downloadLink.href = result.downloadUrl;
             resultTitle.textContent = 'Prototype ready to demo';
             resultSubtitle.textContent = 'Preview the generated demo here, open it in a new tab, or download the HTML.';

@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
-import { basename, dirname, join } from 'path';
+import { basename, dirname, join, resolve } from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import sharp from 'sharp';
@@ -17,11 +17,14 @@ const app = express();
 app.disable('x-powered-by');
 
 const PORT = process.env.PORT || 3000;
+const DATA_ROOT = resolve(process.env.DATA_ROOT || __dirname);
 
 const CONFIG = {
-    UPLOADS_DIR: join(__dirname, 'uploads'),
-    OUTPUT_DIR: join(__dirname, '__output__'),
-    HISTORY_FILE: join(__dirname, 'history', 'whiteboard-history.json'),
+    DATA_ROOT,
+    UPLOADS_DIR: join(DATA_ROOT, 'uploads'),
+    OUTPUT_DIR: join(DATA_ROOT, '__output__'),
+    HISTORY_DIR: join(DATA_ROOT, 'history'),
+    HISTORY_FILE: join(DATA_ROOT, 'history', 'whiteboard-history.json'),
     ASSETS_DIR: join(__dirname, 'assets'),
     MAX_IMAGE_SIZE: 768,
     MAX_UPLOAD_SIZE: 25 * 1024 * 1024,
@@ -57,7 +60,7 @@ async function ensureDirectories() {
     const directories = [
         CONFIG.UPLOADS_DIR,
         CONFIG.OUTPUT_DIR,
-        join(__dirname, 'history')
+        CONFIG.HISTORY_DIR
     ];
 
     for (const directory of directories) {
@@ -1017,6 +1020,7 @@ async function startServer() {
             port: PORT,
             nodeVersion: process.version,
             platform: process.platform,
+            dataRoot: CONFIG.DATA_ROOT,
             defaultAnthropicKeyConfigured: Boolean(process.env.ANTHROPIC_API_KEY?.trim())
         });
     });

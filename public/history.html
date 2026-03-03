@@ -499,7 +499,7 @@
 
                 const actions = document.createElement('div');
                 actions.className = 'session-actions';
-                actions.appendChild(createActionLink('Open preview', session.previewUrl, 'secondary'));
+                actions.appendChild(createActionLink('Open preview', session.embedUrl || session.previewUrl, 'secondary'));
                 actions.appendChild(createActionLink('Download HTML', session.downloadUrl, 'primary'));
 
                 body.appendChild(meta);
