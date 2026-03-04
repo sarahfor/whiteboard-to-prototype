@@ -449,6 +449,99 @@
       text-decoration: underline;
     }
 
+    .tool-access {
+      width: min(920px, 100%);
+      margin: 14px auto 0;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) max-content;
+      gap: 12px;
+      align-items: center;
+      border-radius: 18px;
+      border: 1px solid var(--glass-border);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.86)),
+        var(--panel);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+      backdrop-filter: blur(14px) saturate(130%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tool-access::after {
+      content: "";
+      position: absolute;
+      inset: auto auto -46px -22px;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0) 72%);
+      pointer-events: none;
+    }
+
+    .tool-access-copy,
+    .tool-access-action {
+      position: relative;
+      z-index: 1;
+    }
+
+    .tool-access-copy {
+      display: grid;
+      gap: 5px;
+      max-width: 680px;
+    }
+
+    .tool-access-kicker {
+      display: inline-flex;
+      width: fit-content;
+      padding: 0.28rem 0.62rem;
+      border-radius: 999px;
+      border: 1px solid rgba(197, 215, 243, 0.9);
+      background: rgba(255, 255, 255, 0.9);
+      color: #73839b;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .tool-access-copy h2 {
+      margin: 0;
+      max-width: 28ch;
+      font-size: clamp(20px, 2vw, 26px);
+      line-height: 1.06;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+    }
+
+    .tool-access-copy p {
+      margin: 0;
+      max-width: 54ch;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .tool-access-action {
+      display: grid;
+      align-content: center;
+      justify-items: start;
+      text-align: left;
+      padding-left: 2px;
+    }
+
+    .tool-access .button {
+      min-width: 208px;
+      min-height: 40px;
+      padding: 9px 15px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+    }
+
     .sample-modal {
       position: fixed;
       inset: 0;
@@ -579,6 +672,30 @@
 
       .sample-image-button img {
         height: 192px;
+      }
+
+      .tool-access {
+        width: min(760px, 100%);
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 14px 16px;
+      }
+
+      .tool-access-copy h2 {
+        max-width: 20ch;
+        font-size: clamp(22px, 4.4vw, 28px);
+      }
+
+      .tool-access-action {
+        justify-items: start;
+        text-align: left;
+        padding-left: 0;
+        padding-top: 8px;
+        border-top: 1px solid rgba(37, 99, 235, 0.1);
+      }
+
+      .tool-access .button {
+        min-width: 0;
       }
     }
 
@@ -714,6 +831,44 @@
         padding-top: 4px;
         font-size: 13px;
       }
+
+      .tool-access {
+        margin-top: 12px;
+        padding: 12px 12px;
+        gap: 9px;
+        border-radius: 16px;
+      }
+
+      .tool-access-copy {
+        gap: 6px;
+      }
+
+      .tool-access-kicker {
+        margin: 0 auto;
+        font-size: 9px;
+      }
+
+      .tool-access-copy h2 {
+        max-width: none;
+        font-size: clamp(18px, 6vw, 23px);
+        text-align: center;
+      }
+
+      .tool-access-copy p {
+        font-size: 11px;
+        line-height: 1.42;
+        text-align: center;
+      }
+
+      .tool-access-action {
+        justify-items: center;
+        text-align: center;
+        padding-top: 8px;
+      }
+
+      .tool-access .button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -797,6 +952,17 @@
         </section>
       </section>
     </main>
+
+    <section class="tool-access" aria-labelledby="tool-access-heading">
+      <div class="tool-access-copy">
+        <span class="tool-access-kicker">Tool Access</span>
+        <h2 id="tool-access-heading">Email for collaboration ideas or access to the tool.</h2>
+        <p>If you want to explore the demo builder, discuss a custom use case, or collaborate on applying it to your work, reach out directly.</p>
+      </div>
+      <div class="tool-access-action">
+        <a class="button secondary" href="mailto:hellogenxai@gmail.com?subject=Whiteboard%20to%20Prototype%20Inquiry">hellogenxai@gmail.com</a>
+      </div>
+    </section>
 
     <footer class="site-footer">
       Built by Sarah Forrest and James Kirk. Human-centered AI, product thinking, and a real human in the loop.
